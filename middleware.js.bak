@@ -1,0 +1,59 @@
+import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
+
+export default withAuth(
+  function middleware(req) {
+    const { pathname } = req.nextUrl;
+    const token = req.nextauth?.token;
+    const role = token?.role;
+
+    // Admin-only routes
+    if (pathname.startsWith('/admin')) {
+      if (role !== 'admin') {
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+    }
+
+    // Manager + admin routes
+    if (pathname.startsWith('/manager')) {
+      if (role !== 'manager' && role !== 'admin') {
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+    }
+
+    // Auth-required routes (any logged-in user)
+    if (pathname.startsWith('/bookings') || pathname.startsWith('/profile')) {
+      if (!token) {
+        return NextResponse.redirect(new URL('/login', req.url));
+      }
+    }
+
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      // Only run middleware logic when there's a token OR the route needs protection
+      authorized: ({ token, req }) => {
+        const { pathname } = req.nextUrl;
+        if (
+          pathname.startsWith('/admin') ||
+          pathname.startsWith('/manager') ||
+          pathname.startsWith('/bookings') ||
+          pathname.startsWith('/profile')
+        ) {
+          return true; // Let middleware function decide
+        }
+        return true; // Allow all other routes through
+      },
+    },
+  }
+);
+
+export const config = {
+  matcher: [
+    '/admin/:path*',
+    '/manager/:path*',
+    '/bookings/:path*',
+    '/profile/:path*',
+  ],
+};

@@ -1,0 +1,54 @@
+[
+  {
+    "$id": "1",
+    "user_id": "1",
+    "name": "Premier Court",
+    "description": "FIFA-standard synthetic turf, ideal for competitive 5-a-side matches and league games.",
+    "capacity": 10,
+    "location": "Hellenic Football Club, Pringle Rd, Milnerton",
+    "address": "Pringle Rd, Milnerton, Cape Town, 7441, South Africa",
+    "amenities": "Floodlights, Clubhouse access, Change rooms, Wi-Fi, Secure Parking and a Bar",
+    "availability": "10:00 AM - 22:00 PM",
+    "price_per_hour": 400,
+    "image": "court-1.jpg"
+  },
+  {
+    "$id": "2",
+    "user_id": "1",
+    "name": "Secondary Court",
+    "description": "Perfect for casual games, kids parties, and corporate events with modern facilities.",
+    "capacity": 10,
+    "location": "Hellenic Football Club, Pringle Rd, Milnerton",
+    "address": "Pringle Rd, Milnerton, Cape Town, 7441, South Africa",
+    "amenities": "Floodlights, Clubhouse Restaurant, Kids Party Packages, Secure Parking and a Bar",
+    "availability": "10:00 AM - 22:00 PM",
+    "price_per_hour": 400,
+    "image": "court-2.jpg"
+  },
+  {
+    "$id": "3",
+    "user_id": "1",
+    "name": "Third Court",
+    "description": "Designed for practice sessions, coaching clinics, and junior leagues.",
+    "capacity": 10,
+    "location": "Hellenic Football Club, Pringle Rd, Milnerton",
+    "address": "Pringle Rd, Milnerton, Cape Town, 7441, South Africa",
+    "amenities": "Floodlights, Coaching Support, Whiteboard, Secure Parking and a Bar",
+    "availability": "10:00 AM - 22:00 PM",
+    "price_per_hour": 400,
+    "image": "court-3.jpg"
+  },
+  {
+    "$id": "4",
+    "user_id": "1",
+    "name": "Fourth Court",
+    "description": "Versatile space for tournaments, ladies league, and mixed social games.",
+    "capacity": 10,
+    "location": "Hellenic Football Club, Pringle Rd, Milnerton",
+    "address": "Pringle Rd, Milnerton, Cape Town, 7441, South Africa",
+    "amenities": "Floodlights, Sound System, Clubhouse Restaurant, Secure Parking and a Bar",
+    "availability": "10:00 AM - 22:00 PM",
+    "price_per_hour": 400,
+    "image": "court-4.jpg"
+  }
+]

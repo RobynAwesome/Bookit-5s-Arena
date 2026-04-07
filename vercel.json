@@ -1,0 +1,23 @@
+{
+  "framework": "nextjs",
+  "regions": ["fra1"],
+  "functions": {
+    "app/api/sse/**": {
+      "maxDuration": 60
+    },
+    "app/api/admin/**": {
+      "maxDuration": 30
+    },
+    "app/api/**": {
+      "maxDuration": 15
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/sse/(.*)",
+      "headers": [
+        { "key": "X-Accel-Buffering", "value": "no" }
+      ]
+    }
+  ]
+}

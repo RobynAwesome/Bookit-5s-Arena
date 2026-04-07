@@ -262,6 +262,10 @@ function SecurityNotice({ onAccept }) {
 export default function AuthPage() {
   const router = useRouter();
   const recaptchaRef = useRef(null);
+  const recaptchaSiteKey =
+    typeof process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY === "string"
+      ? process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY.trim()
+      : "";
 
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
@@ -275,7 +279,9 @@ export default function AuthPage() {
   const [focusedField, setFocusedField] = useState(null);
   const [showSecurityNotice, setShowSecurityNotice] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // stores fn to run after security ack
-  const [recaptchaAvailable, setRecaptchaAvailable] = useState(true); // false if blocked by ad-blocker
+  const [recaptchaAvailable, setRecaptchaAvailable] = useState(
+    Boolean(recaptchaSiteKey),
+  );
   const [rememberMe, setRememberMe] = useState(true);
 
   useEffect(() => {
@@ -287,6 +293,10 @@ export default function AuthPage() {
   }, []);
 
   useEffect(() => {
+    if (!recaptchaSiteKey) {
+      setRecaptchaAvailable(false);
+      return;
+    }
     // Detect if ReCAPTCHA script can load (ad-blockers block google.com/recaptcha)
     const timeout = setTimeout(() => {
       if (!window.grecaptcha) {
@@ -297,7 +307,7 @@ export default function AuthPage() {
       }
     }, 3000);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [recaptchaSiteKey]);
 
   const withSecurityCheck = (action) => {
     const alreadySeen =
@@ -738,23 +748,20 @@ export default function AuthPage() {
                       </span>
                     </label>
                     {recaptchaAvailable ? (
-                      <ReCAPTCHA
-                        ref={recaptchaRef}
-                        sitekey={
-                          process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ||
-                          "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-                        }
-                        onChange={(token) => setRecaptchaToken(token || "")}
-                        onErrored={() => setRecaptchaAvailable(false)}
-                        theme="dark"
+                        <ReCAPTCHA
+                          ref={recaptchaRef}
+                          sitekey={recaptchaSiteKey}
+                          onChange={(token) => setRecaptchaToken(token || "")}
+                          onErrored={() => setRecaptchaAvailable(false)}
+                          theme="dark"
                         size="normal"
                       />
                     ) : (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-900/20 border border-amber-700/30 text-amber-400 text-xs">
                         <FaShieldAlt size={12} />
                         <span>
-                          Security check unavailable — disable ad-blocker to
-                          enable it
+                          Security check unavailable right now. You can still
+                          continue securely.
                         </span>
                       </div>
                     )}
@@ -841,23 +848,20 @@ export default function AuthPage() {
                       />
                     </div>
                     {recaptchaAvailable ? (
-                      <ReCAPTCHA
-                        ref={recaptchaRef}
-                        sitekey={
-                          process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ||
-                          "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-                        }
-                        onChange={(token) => setRecaptchaToken(token || "")}
-                        onErrored={() => setRecaptchaAvailable(false)}
-                        theme="dark"
+                        <ReCAPTCHA
+                          ref={recaptchaRef}
+                          sitekey={recaptchaSiteKey}
+                          onChange={(token) => setRecaptchaToken(token || "")}
+                          onErrored={() => setRecaptchaAvailable(false)}
+                          theme="dark"
                         size="normal"
                       />
                     ) : (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-900/20 border border-amber-700/30 text-amber-400 text-xs">
                         <FaShieldAlt size={12} />
                         <span>
-                          Security check unavailable — disable ad-blocker to
-                          enable it
+                          Security check unavailable right now. You can still
+                          continue securely.
                         </span>
                       </div>
                     )}

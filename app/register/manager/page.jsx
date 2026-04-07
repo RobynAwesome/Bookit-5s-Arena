@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -57,6 +57,10 @@ function ParticleField() {
 export default function ManagerRegisterPage() {
   const router = useRouter();
   const recaptchaRef = useRef(null);
+  const recaptchaSiteKey =
+    typeof process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY === 'string'
+      ? process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY.trim()
+      : '';
 
   const [mode, setMode] = useState('register');
   const [email, setEmail] = useState('');
@@ -67,13 +71,20 @@ export default function ManagerRegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
+  const [recaptchaAvailable, setRecaptchaAvailable] = useState(Boolean(recaptchaSiteKey));
+
+  useEffect(() => {
+    if (!recaptchaSiteKey) {
+      setRecaptchaAvailable(false);
+    }
+  }, [recaptchaSiteKey]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (!recaptchaToken) { setError('Please complete the verification check.'); return; }
+    if (recaptchaAvailable && !recaptchaToken) { setError('Please complete the verification check.'); return; }
 
     setLoading(true);
     const res = await fetch('/api/auth/register', {
@@ -185,9 +196,22 @@ export default function ManagerRegisterPage() {
                   </div>
                 </div>
 
-                <div className="bg-gray-800/20 rounded-xl border border-gray-700/40 p-3 flex justify-center backdrop-blur-sm">
-                  <ReCAPTCHA ref={recaptchaRef} sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY} onChange={(token) => setRecaptchaToken(token || '')} theme="dark" />
-                </div>
+                {recaptchaAvailable ? (
+                  <div className="bg-gray-800/20 rounded-xl border border-gray-700/40 p-3 flex justify-center backdrop-blur-sm">
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={recaptchaSiteKey}
+                      onChange={(token) => setRecaptchaToken(token || '')}
+                      onErrored={() => setRecaptchaAvailable(false)}
+                      theme="dark"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-3 rounded-lg bg-amber-900/20 border border-amber-700/30 text-amber-400 text-xs">
+                    <FaShieldAlt size={12} />
+                    <span>Security check unavailable right now. You can still continue securely.</span>
+                  </div>
+                )}
 
                 <motion.button type="submit" disabled={loading} className="w-full py-4 rounded-xl font-black text-white uppercase tracking-widest bg-gradient-to-r from-purple-600 to-indigo-600 shadow-[0_10px_30px_rgba(147,51,234,0.3)] hover:scale-[1.02] transition-all disabled:opacity-50">
                   {loading ? 'Creating Squad...' : 'Initialize Manager Account'}

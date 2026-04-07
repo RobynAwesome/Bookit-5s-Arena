@@ -259,7 +259,7 @@ function GridItem({ team, index, selected, onSelect, particles, ripples }) {
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-gray-800/95 border border-gray-700 whitespace-nowrap pointer-events-none z-50"
+            className="absolute -top-8 left-1/2 max-w-[8rem] -translate-x-1/2 px-2 py-0.5 rounded bg-gray-800/95 border border-gray-700 text-center pointer-events-none z-50"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}

@@ -102,7 +102,7 @@ export default function SoccerBallMenu() {
                     setHoveredIndex(null);
                     closeTimer.current = setTimeout(() => setIsOpen(false), 4000);
                   }}
-                  className="flex items-center gap-4 px-5 py-4 rounded-xl bg-gray-950/95 backdrop-blur-2xl border border-gray-800 shadow-[0_10px_40px_rgba(0,0,0,0.8)] cursor-pointer whitespace-nowrap origin-left"
+                  className="flex max-w-[min(22rem,calc(100vw-6rem))] items-center gap-4 px-5 py-4 rounded-xl bg-gray-950/95 backdrop-blur-2xl border border-gray-800 shadow-[0_10px_40px_rgba(0,0,0,0.8)] cursor-pointer origin-left"
                   initial={{ opacity: 0, x: -20, scale: 0.8 }}
                   animate={{
                     opacity: 1,
@@ -131,10 +131,10 @@ export default function SoccerBallMenu() {
                   >
                     <Icon size={18} style={{ color: item.color }} />
                   </motion.div>
-                  <div className="text-left">
-                    <p className="text-white text-sm font-black uppercase tracking-widest">{item.label}</p>
-                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">{item.desc}</p>
-                  </div>
+                    <div className="min-w-0 text-left">
+                      <p className="text-white text-sm font-black uppercase tracking-widest">{item.label}</p>
+                      <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">{item.desc}</p>
+                    </div>
                 </motion.button>
               );
             })}
@@ -172,7 +172,7 @@ export default function SoccerBallMenu() {
         <AnimatePresence>
           {!isOpen && (
             <motion.span
-              className="absolute -top-8 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-widest text-green-400 whitespace-nowrap bg-gray-950/90 px-2 py-1 rounded-lg border border-green-500/30 pointer-events-none"
+              className="absolute -top-8 left-1/2 max-w-[10rem] -translate-x-1/2 text-center text-[9px] font-black uppercase tracking-widest text-green-400 bg-gray-950/90 px-2 py-1 rounded-lg border border-green-500/30 pointer-events-none"
               initial={{ opacity: 0, y: 4 }}
               whileHover={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}

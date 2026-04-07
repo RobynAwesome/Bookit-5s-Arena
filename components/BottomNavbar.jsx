@@ -235,7 +235,7 @@ export default function BottomNavbar() {
       <AnimatePresence>
         {!isOpen && (
           <motion.span
-            className="absolute -top-7 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase tracking-widest text-green-400 whitespace-nowrap bg-gray-950/90 px-2 py-1 rounded-lg border border-green-500/20 pointer-events-none"
+            className="absolute -top-7 left-1/2 max-w-[8rem] -translate-x-1/2 text-center text-[8px] font-black uppercase tracking-widest text-green-400 bg-gray-950/90 px-2 py-1 rounded-lg border border-green-500/20 pointer-events-none"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 0 }}
             whileHover={{ opacity: 1, y: 0 }}

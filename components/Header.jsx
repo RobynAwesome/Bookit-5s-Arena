@@ -221,13 +221,13 @@ const Header = () => {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="px-4 py-2 text-[10px] font-bold text-gray-400 hover:text-white uppercase tracking-widest"
+                  className="px-3 sm:px-4 py-2 text-[9px] sm:text-[10px] text-center font-bold text-gray-400 hover:text-white uppercase tracking-widest"
                 >
                   LOGIN
                 </Link>
                 <Link
                   href="/register"
-                  className="px-5 py-2 text-[10px] font-black text-white bg-green-600 rounded-lg shadow-[0_0_12px_rgba(34,197,94,0.4)] uppercase tracking-widest"
+                  className="px-3 sm:px-5 py-2 text-[9px] sm:text-[10px] text-center font-black text-white bg-green-600 rounded-lg shadow-[0_0_12px_rgba(34,197,94,0.4)] uppercase tracking-widest"
                 >
                   REGISTER
                 </Link>

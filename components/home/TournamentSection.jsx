@@ -250,10 +250,10 @@ export default function TournamentSection() {
             transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
           />
 
-          <div className="relative z-10 py-8 px-6 md:px-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
+          <div className="relative z-10 py-8 px-6 md:px-10 flex flex-col md:flex-row items-center gap-6 md:gap-10 overflow-x-hidden">
 
             {/* ── TROPHY (LEFT) — heavy infinite animations ── */}
-            <div className="flex flex-col items-center shrink-0 select-none">
+            <div className="flex flex-col items-center shrink-0 select-none w-full md:w-auto">
               {/* Outer glow ring */}
               <motion.div
                 className="relative"
@@ -296,7 +296,7 @@ export default function TournamentSection() {
             </div>
 
             {/* ── Prize amount + info (CENTRE) ── */}
-            <div className="flex-1 min-w-0 text-center md:text-left">
+            <div className="flex-1 min-w-0 w-full text-center md:text-left">
               <p className="text-[9px] font-black uppercase tracking-[0.3em] text-yellow-400 mb-1">
                 Champions of 5s Arena World Cup
               </p>
@@ -317,7 +317,7 @@ export default function TournamentSection() {
               <p className="text-gray-400 text-sm font-semibold mb-4">CASH PRIZE · TO BE WON</p>
 
               {/* Prize breakdown pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
+              <div className="inline-flex max-w-full flex-col sm:flex-row items-center justify-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-center">
                 <span className="text-base">🥇</span>
                 <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">Winner Takes All</span>
                 <span className="text-xs font-black text-yellow-400">R50,000</span>
@@ -328,7 +328,7 @@ export default function TournamentSection() {
             <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
               <Link href="/tournament">
                 <motion.button
-                  className="flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-green-600 text-white font-black uppercase tracking-widest text-sm cursor-pointer w-full md:w-auto"
+                  className="flex w-full items-center justify-center gap-2 px-5 py-4 rounded-xl bg-green-600 text-white font-black uppercase tracking-widest text-sm text-center cursor-pointer md:w-auto"
                   style={{ fontFamily: "Impact, Arial Black, sans-serif", boxShadow: "0 0 30px rgba(34,197,94,0.4)" }}
                   whileHover={{ scale: 1.07, boxShadow: "0 0 55px rgba(34,197,94,0.65)" }}
                   whileTap={{ scale: 0.94 }}
@@ -340,7 +340,7 @@ export default function TournamentSection() {
               </Link>
               <Link href="/rules-of-the-game">
                 <motion.button
-                  className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-600 text-gray-300 hover:text-white font-bold uppercase tracking-widest text-xs transition-all cursor-pointer w-full"
+                  className="flex w-full items-center justify-center gap-2 px-5 py-3 rounded-xl border border-gray-600 text-gray-300 hover:text-white font-bold uppercase tracking-widest text-xs text-center transition-all cursor-pointer"
                   whileHover={{ scale: 1.04, borderColor: "rgba(74,222,128,0.6)", color: "#fff" }}
                   whileTap={{ scale: 0.96 }}
                 >

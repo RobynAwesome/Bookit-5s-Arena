@@ -515,7 +515,7 @@ export default function AuthPage() {
                       "linear-gradient(135deg, rgba(124,58,237,0.35), rgba(234,88,12,0.35), rgba(202,138,4,0.35))",
                   }}
                 />
-                <div className="relative flex items-center gap-3 px-4 py-3">
+                <div className="relative flex flex-col md:flex-row items-center gap-3 px-4 py-3 text-center md:text-left">
                   <motion.span
                     className="text-2xl shrink-0"
                     animate={{ rotate: [-10, 10, -10], scale: [1, 1.15, 1] }}
@@ -523,7 +523,7 @@ export default function AuthPage() {
                   >
                     🏆
                   </motion.span>
-                  <div>
+                  <div className="w-full">
                     <p className="text-[9px] font-black uppercase tracking-widest text-yellow-400">
                       Grand Prize · Winners Take
                     </p>
@@ -551,7 +551,7 @@ export default function AuthPage() {
 
             <Link
               href="/tournament"
-              className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 bg-green-600 hover:bg-green-500 text-white font-black uppercase tracking-widest text-sm rounded-xl transition-all shadow-[0_0_20px_rgba(22,163,74,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] relative z-10 cursor-pointer"
+              className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-green-600 hover:bg-green-500 text-white font-black uppercase tracking-widest text-sm text-center rounded-xl transition-all shadow-[0_0_20px_rgba(22,163,74,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] relative z-10 cursor-pointer"
             >
               <FaTicketAlt /> Secure Your Team Spot
             </Link>

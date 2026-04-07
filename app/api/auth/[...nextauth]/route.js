@@ -13,12 +13,12 @@ async function getHandler() {
   return _handler;
 }
 
-export async function GET(req) {
+export async function GET(req, ctx) {
   const handler = await getHandler();
-  return handler(req);
+  return handler(req, ctx);
 }
 
-export async function POST(req) {
+export async function POST(req, ctx) {
   const handler = await getHandler();
-  return handler(req);
+  return handler(req, ctx);
 }

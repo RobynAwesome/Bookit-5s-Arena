@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic';
 let _handler;
 async function getHandler() {
   if (!_handler) {
-    const { default: NextAuth } = await import('next-auth');
+    const nextAuthModule = await import('next-auth');
+    const NextAuth = nextAuthModule.default?.default || nextAuthModule.default;
     const { authOptions } = await import('@/lib/authOptions');
     _handler = NextAuth(authOptions);
   }

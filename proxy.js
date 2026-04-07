@@ -74,7 +74,7 @@ export default withAuth(
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.youtube.com https://s.ytimg.com https://www.google.com https://www.gstatic.com https://plausible.io",
+        "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://www.youtube.com https://s.ytimg.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://plausible.io",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: blob: https:",
@@ -82,6 +82,9 @@ export default withAuth(
           "connect-src 'self'",
           "https://accounts.google.com",
           "https://www.googleapis.com",
+          "https://www.google.com",
+          "https://www.gstatic.com",
+          "https://www.recaptcha.net",
           "https://get.geojs.io",
           "https://api.open-meteo.com",
           "https://v2.jokeapi.dev",
@@ -90,7 +93,7 @@ export default withAuth(
           "https://api.anthropic.com",
           "https://plausible.io",
         ].join(' '),
-        "frame-src 'self' https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://www.gstatic.com",
+        "frame-src 'self' https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net",
         "media-src 'self' https://www.youtube.com https://i.ytimg.com",
       ].join('; ')
     );

@@ -7,7 +7,7 @@ const ThemeContext = createContext();
 const THEMES = {
   dark: {
     name: 'Dark',
-    emoji: '🌙',
+    icon: 'dark',
     bg: '#030712',
     text: '#f9fafb',
     accent: '#22c55e',
@@ -19,7 +19,7 @@ const THEMES = {
   },
   light: {
     name: 'Light',
-    emoji: '☀️',
+    icon: 'light',
     bg: '#f8fafc',
     text: '#0f172a',
     accent: '#16a34a',
@@ -29,22 +29,9 @@ const THEMES = {
     btnFrom: '#166534',
     btnTo: '#16a34a',
   },
-  crazy: {
-    name: 'Crazy',
-    emoji: '🔥',
-    bg: '#0d0520',
-    text: '#f3e8ff',
-    accent: '#a855f7',
-    card: '#160830',
-    border: '#4c2280',
-    glow: 'rgba(168,85,247,0.8)',
-    btnFrom: '#7e22ce',
-    btnTo: '#a855f7',
-    animation: 'pulse-neon',
-  },
   read: {
     name: 'Read',
-    emoji: '📖',
+    icon: 'read',
     bg: '#faf7f2',
     text: '#1c1917',
     accent: '#16a34a',
@@ -58,19 +45,19 @@ const THEMES = {
 };
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('dark');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('5s_theme');
-    if (saved && THEMES[saved]) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTheme(saved);
-    } else {
-      // Force 'dark' as the absolute default for the "God-Mode" aesthetic
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTheme('dark');
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') {
+      return 'dark';
     }
-  }, []);
+
+    const saved = localStorage.getItem('5s_theme');
+    if (saved === 'crazy') {
+      localStorage.setItem('5s_theme', 'dark');
+      return 'dark';
+    }
+
+    return saved && THEMES[saved] ? saved : 'dark';
+  });
 
   useEffect(() => {
     localStorage.setItem('5s_theme', theme);

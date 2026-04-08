@@ -6,21 +6,16 @@ import { FaChevronUp } from 'react-icons/fa';
 
 export default function ScrollToTop() {
   const [isVisible, setIsVisible] = useState(false);
-  const [scrollPercent, setScrollPercent] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const scrolled = window.pageYOffset;
-      const total = document.documentElement.scrollHeight - window.innerHeight;
-      setScrollPercent(total > 0 ? Math.round((scrolled / total) * 100) : 0);
       setIsVisible(scrolled > 400);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   return (
     <AnimatePresence>
@@ -38,7 +33,7 @@ export default function ScrollToTop() {
             ],
           }}
           exit={{ opacity: 0, scale: 0.5, y: 20 }}
-          onClick={scrollToTop}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="fixed bottom-8 right-6 z-[60] w-16 h-16 flex flex-col items-center justify-center gap-0.5 rounded-2xl cursor-pointer group"
           style={{
             background: 'linear-gradient(135deg, var(--btn-from), var(--btn-to))',

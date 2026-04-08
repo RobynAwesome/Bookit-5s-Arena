@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { FaComments, FaTimes, FaPaperPlane, FaFutbol, FaRobot, FaCalendarAlt, FaArrowRight } from 'react-icons/fa';
+import { FaComments, FaTimes, FaPaperPlane, FaFutbol, FaRobot, FaCalendarAlt } from 'react-icons/fa';
 
 const QUICK_QUESTIONS = [
   'How do I book a court?',

@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+const config = {
   darkMode: 'class',
   future: {
     useLegacyColorPalette: true,
@@ -43,3 +43,5 @@ export default {
   },
   plugins: [],
 };
+
+export default config;

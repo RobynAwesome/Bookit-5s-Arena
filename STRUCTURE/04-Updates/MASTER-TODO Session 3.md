@@ -24,12 +24,16 @@
 - [x] regenerate the four court image assets with original non-infringing artwork
 - [x] convert booking flow to hourly slot selection with backend validation
 - [x] run targeted eslint cleanly on the booking/court change set
+- [x] fix court detail fallback so seeded courts still open when Mongo is unavailable
+- [x] fix `GiscusComments` env-readiness bug that was breaking linted builds
+- [x] reduce a safe subset of warning backlog outside the overlapping Codex App lane
 - [ ] keep ownership lanes current while parallel work is active
 - [ ] update this board after each safe session checkpoint
 
 Next:
 - keep docs and handoff lane isolated
 - visually QA the new court imagery and hourly booking flow on real mobile breakpoints
+- continue warning reduction only in untouched files
 - wait for overlapping code lane to settle before touching reward/referral code
 - verify reward-system completion after conflict risk is gone
 
@@ -98,6 +102,8 @@ Next:
 - [x] confirm current working tree is buildable with active parallel lane
 - [x] confirm lint currently passes with warnings only and no hard errors in the parallel report
 - [x] confirm the booking/court change set passes targeted eslint with no warnings
+- [x] confirm court detail routes can fall back to seeded local court data during Mongo outages
+- [x] confirm the latest safe-lane warning-reduction files pass targeted eslint cleanly
 - [ ] reduce existing lint warning backlog now that `next build` is linting again
 - [ ] full authenticated manager mutation sweep
 - [ ] full authenticated admin mutation sweep
@@ -124,6 +130,8 @@ Next:
 - [x] current working tree build verified
 - [x] 4-tier audit pack added
 - [x] court media refresh and hourly booking pass implemented
+- [x] fallback court detail route support added for local/offline data mode
+- [x] safe-lane warning cleanup checkpoint added
 - [ ] ownership board reconciled with Codex App output
 - [ ] reward lane resumed safely
 - [ ] merge/review checkpoint logged

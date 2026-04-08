@@ -34,6 +34,9 @@
 - Four original court images regenerated on the live court filenames.
 - Booking flow changed to hourly slot selection with AM/PM labels and backend validation.
 - Service worker cache version bumped so refreshed court media can replace stale cached court photos.
+- Court detail pages now fall back to seeded local court records when Mongo is unavailable, so fallback homepage court links still open.
+- `GiscusComments` env readiness logic was corrected so the linted build path stays clean.
+- Safe warning reduction was applied in untouched files, bringing the combined lint report down from `73` warnings to `65`.
 - Targeted eslint for the booking/court lane passes with `0` errors and `0` warnings.
 - Full `npm run build` passes; Atlas allowlist warning remains external and non-fatal.
 

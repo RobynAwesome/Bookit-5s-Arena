@@ -2,18 +2,21 @@ import Link from 'next/link';
 import { FaFutbol } from 'react-icons/fa';
 import CourtDetailClient from './CourtDetailClient';
 import connectDB from '@/lib/mongodb';
+import { getFallbackCourts } from '@/lib/localData/courts';
 import Court from '@/models/Court';
 
 // Fetch single court directly from MongoDB (avoids URL mismatch in dev)
 const getCourt = async (id) => {
+  const fallbackCourt = getFallbackCourts().find((court) => String(court._id) === String(id));
+
   try {
-    if (!/^[a-fA-F0-9]{24}$/.test(id)) return null;
+    if (!/^[a-fA-F0-9]{24}$/.test(id)) return fallbackCourt || null;
     await connectDB();
     const court = await Court.findById(id).lean();
-    if (!court) return null;
+    if (!court) return fallbackCourt || null;
     return JSON.parse(JSON.stringify(court));
   } catch {
-    return null;
+    return fallbackCourt || null;
   }
 };
 

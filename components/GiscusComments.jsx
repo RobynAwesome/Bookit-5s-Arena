@@ -4,24 +4,22 @@ import { useEffect, useRef } from "react";
 
 export default function GiscusComments() {
   const ref = useRef(null);
-  const [giscusReady, setGiscusReady] = useEffect(() => {
-    // Check for required environment variables
-    const repoId = process.env.NEXT_PUBLIC_GISCUS_REPO_ID;
-    const categoryId = process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID;
+  const repoId = process.env.NEXT_PUBLIC_GISCUS_REPO_ID;
+  const categoryId = process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID;
+  const giscusReady = Boolean(
+    repoId &&
+      categoryId &&
+      !repoId.includes("YOUR_") &&
+      !categoryId.includes("YOUR_"),
+  );
 
-    if (
-      !repoId ||
-      !categoryId ||
-      repoId.includes("YOUR_") ||
-      categoryId.includes("YOUR_")
-    ) {
+  useEffect(() => {
+    if (!giscusReady) {
       console.warn(
         "⚠️ Giscus comments disabled: Missing or placeholder environment variables. Configure NEXT_PUBLIC_GISCUS_REPO_ID and NEXT_PUBLIC_GISCUS_CATEGORY_ID.",
       );
-      return false;
     }
-    return true;
-  }, []);
+  }, [giscusReady]);
 
   useEffect(() => {
     if (!ref.current || ref.current.hasChildNodes() || !giscusReady) return;

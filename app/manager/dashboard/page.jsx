@@ -12,8 +12,6 @@ import {
   FaCalendarCheck,
   FaGift,
   FaUsersCog,
-  FaExclamationTriangle,
-  FaFutbol,
   FaLock,
   FaShieldAlt,
   FaCheckCircle,
@@ -26,7 +24,6 @@ export default function ManagerDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [team, setTeam] = useState(null);
-  const [fixtures, setFixtures] = useState([]);
 
   const fetchTeamData = async () => {
     try {

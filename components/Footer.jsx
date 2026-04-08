@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -12,13 +11,10 @@ import {
   FaPhone,
   FaEnvelope,
   FaMapMarkerAlt,
-  FaArrowUp,
   FaFutbol,
   FaLinkedinIn,
   FaShareAlt,
-  FaRss,
   FaCoffee,
-  FaHeart,
   FaExternalLinkAlt,
 } from "react-icons/fa";
 import { useSession } from "next-auth/react";
@@ -107,17 +103,8 @@ const BOTTOM_TABS = [
 
 /* ═══════════════════════════════════════════════════════════ */
 const Footer = () => {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const currentYear = new Date().getFullYear();
-  const [shareUrl, setShareUrl] = useState("");
-
-  useEffect(() => {
-    // Set shareUrl on mount (client-only) to avoid hydration mismatch
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShareUrl(window.location.href);
-  }, []);
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const handleShare = () => {
     const url = window.location.href;
@@ -227,12 +214,18 @@ const Footer = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <motion.img
-                src="/images/logo.png"
-                alt="5s Arena"
-                className="w-16 h-16 rounded-full object-contain"
+              <motion.div
+                className="relative w-16 h-16 rounded-full overflow-hidden"
                 whileHover={{ scale: 1.08 }}
-              />
+              >
+                <Image
+                  src="/images/logo.png"
+                  alt="5s Arena"
+                  fill
+                  sizes="64px"
+                  className="object-contain"
+                />
+              </motion.div>
               <div>
                 <p
                   className="font-black uppercase text-white text-lg tracking-wider"

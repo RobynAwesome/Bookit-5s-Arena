@@ -37,7 +37,7 @@
 | `/register/manager` | manager registration | verified `200` | form QA with real submissions |
 | `/profile` | user profile | guest redirect `307` | authenticated avatar/provider QA still needed |
 | `/bookings` | booking flow | guest redirect `307` | auth/user QA required |
-| `/bookings/success` | booking success | guest redirect `307` | confirm intended guest behavior |
+| `/bookings/success` | booking success | guest-accessible confirmation surface | keep guest-safe rendering while preserving private booking detail access controls |
 | `/my-courts` | court ownership view | guest redirect `307` | authenticated role coverage needed |
 | `/rewards` | rewards view | guest redirect `307` | reward earn/redeem QA needed |
 

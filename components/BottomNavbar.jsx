@@ -10,13 +10,10 @@ import {
   FaCalendarAlt,
   FaTrophy,
   FaHome,
-  FaGift,
   FaStar,
-  FaBolt,
   FaUsers,
   FaTachometerAlt,
   FaListAlt,
-  FaChartBar,
   FaUserShield,
   FaBookOpen,
   FaKey,
@@ -90,38 +87,11 @@ const ADMIN_ITEMS = [
   // Analytics tab removed
 ];
 
-export default function BottomNavbar() {
+function BottomNavbarDock({ items, pathname, roleBadge }) {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const { data: session } = useSession();
-  const pathname = usePathname();
   const menuRef = useRef(null);
   const closeTimer = useRef(null);
-
-  const role = session?.user?.activeRole || session?.user?.role;
-  const items =
-    role === "admin"
-      ? ADMIN_ITEMS
-      : role === "manager"
-        ? MANAGER_ITEMS
-        : session
-          ? USER_ITEMS
-          : GUEST_ITEMS;
-
-  const hideNavbar =
-    pathname === "/login" ||
-    pathname === "/register" ||
-    pathname === "/role-select";
-
-  // Badge colour, icon, and label per role
-  const roleBadge =
-    role === "admin"
-      ? { label: "ADMIN", color: "#f97316", icon: FaUserShield }
-      : role === "manager"
-        ? { label: "MANAGER", color: "#3b82f6", icon: FaUsers }
-        : session
-          ? { label: "PLAYER", color: "#22c55e", icon: FaFutbol }
-          : null;
 
   // Auto-close after 5 seconds
   useEffect(() => {
@@ -157,13 +127,6 @@ export default function BottomNavbar() {
     return pathname?.startsWith(href);
   };
 
-  useEffect(() => {
-    setIsOpen(false);
-    setHoveredIndex(null);
-  }, [pathname]);
-
-  if (hideNavbar) return null;
-
   return (
     /* Hidden on mobile (sm:flex). Positioned at bottom center */
     <div
@@ -179,6 +142,7 @@ export default function BottomNavbar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.85 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            onMouseLeave={() => setHoveredIndex(null)}
           >
             {items.map((item, i) => {
               const Icon = item.icon;
@@ -189,6 +153,7 @@ export default function BottomNavbar() {
                   key={item.href}
                   href={item.href}
                   className="flex flex-col items-center px-2 py-1 rounded-lg transition-all"
+                  onMouseEnter={() => setHoveredIndex(i)}
                   style={{
                     color: active ? item.color : "#fff",
                     transform: `scale(${scale})`,
@@ -257,5 +222,45 @@ export default function BottomNavbar() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function BottomNavbar() {
+  const { data: session } = useSession();
+  const pathname = usePathname();
+
+  const role = session?.user?.activeRole || session?.user?.role;
+  const items =
+    role === "admin"
+      ? ADMIN_ITEMS
+      : role === "manager"
+        ? MANAGER_ITEMS
+        : session
+          ? USER_ITEMS
+          : GUEST_ITEMS;
+
+  const hideNavbar =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/role-select";
+
+  const roleBadge =
+    role === "admin"
+      ? { label: "ADMIN", color: "#f97316", icon: FaUserShield }
+      : role === "manager"
+        ? { label: "MANAGER", color: "#3b82f6", icon: FaUsers }
+        : session
+          ? { label: "PLAYER", color: "#22c55e", icon: FaFutbol }
+          : null;
+
+  if (hideNavbar) return null;
+
+  return (
+    <BottomNavbarDock
+      key={pathname || "/"}
+      items={items}
+      pathname={pathname}
+      roleBadge={roleBadge}
+    />
   );
 }

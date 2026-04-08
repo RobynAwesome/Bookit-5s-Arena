@@ -13,6 +13,7 @@ const PROTECTED_ROUTE_RULES = [
 
 const SUPER_ADMIN_EMAIL = "rkholofelo@gmail.com";
 const ROLE_HIERARCHY = { guest: 0, user: 1, manager: 2, admin: 3 };
+const PUBLIC_BOOKING_ROUTES = new Set(["/bookings/success"]);
 
 function matchesProtectedPrefix(pathname, prefix) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
@@ -28,6 +29,11 @@ function hasMinRole(activeRole, requiredRole) {
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+
+  if (PUBLIC_BOOKING_ROUTES.has(pathname)) {
+    return NextResponse.next();
+  }
+
   const rule = PROTECTED_ROUTE_RULES.find(({ prefix }) =>
     matchesProtectedPrefix(pathname, prefix),
   );

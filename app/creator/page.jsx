@@ -7,9 +7,6 @@ import Link from "next/link";
 import {
   FaGithub,
   FaLinkedin,
-  FaInstagram,
-  FaTiktok,
-  FaFacebook,
   FaWhatsapp,
   FaCode,
   FaPaintBrush,
@@ -50,7 +47,6 @@ const COLORS = [
   "#34d399",
   "#fb923c",
 ];
-const NAME = "KHOLOFELO";
 
 /* Firework particle on click */
 function Firework({ x, y, onDone }) {
@@ -64,7 +60,7 @@ function Firework({ x, y, onDone }) {
       // eslint-disable-next-line react-hooks/purity
       dur: 0.8 + Math.random() * 0.3,
     };
-  }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  }), []);
 
   useEffect(() => {
     const t = setTimeout(onDone, 1000);
@@ -93,7 +89,6 @@ function Firework({ x, y, onDone }) {
 function WelcomeAnimation({ onComplete }) {
   const [phase, setPhase] = useState(0);
   const [fireworks, setFireworks] = useState([]);
-  const [footballSpin, setFootballSpin] = useState(false);
 
   useEffect(() => {
     const timers = [
@@ -154,9 +149,11 @@ function WelcomeAnimation({ onComplete }) {
           animate={{ rotate: [0, 360] }}
           transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         >
-          <img
+          <Image
             src="/images/logo.png"
             alt="Bookit 5s Arena Logo"
+            width={192}
+            height={192}
             className="w-36 h-36 md:w-48 md:h-48 object-contain drop-shadow-[0_0_40px_rgba(34,197,94,0.25)] rounded-full"
             style={{ animation: "spin 8s linear infinite" }}
           />

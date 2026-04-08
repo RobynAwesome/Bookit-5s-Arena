@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   FaCheckCircle,
   FaFutbol,
@@ -13,6 +14,7 @@ import {
 } from "react-icons/fa";
 
 const BookingSuccessContent = () => {
+  const { data: session, status: sessionStatus } = useSession();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("bookingId");
 
@@ -22,12 +24,15 @@ const BookingSuccessContent = () => {
   const legacyTime = searchParams.get("time") ?? null;
   const legacyDuration = searchParams.get("duration") ?? null;
   const legacyTotal = searchParams.get("total") ?? null;
+  const hasLegacyDetails = Boolean(
+    legacyCourt || legacyDate || legacyTime || legacyDuration || legacyTotal,
+  );
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(!!bookingId);
 
   useEffect(() => {
-    if (!bookingId) return;
+    if (!bookingId || sessionStatus === "loading") return;
 
     const confirmBooking = async () => {
       try {
@@ -47,10 +52,15 @@ const BookingSuccessContent = () => {
           return;
         }
 
-        // 2. Fallback — fetch booking directly (webhook may have already fired)
-        const fallback = await fetch(`/api/bookings/${bookingId}`);
-        if (fallback.ok) {
-          setBooking(await fallback.json());
+        if (sessionStatus === "authenticated") {
+          // 2. Authenticated fallback — fetch booking directly if the webhook
+          //    has already confirmed it and the user owns the booking.
+          const fallback = await fetch(`/api/bookings/${bookingId}`);
+          if (fallback.ok) {
+            setBooking(await fallback.json());
+          }
+        } else if (!hasLegacyDetails) {
+          setBooking({ paymentStatus: "pending", status: "pending" });
         }
       } catch (err) {
         console.error("Success page fetch error:", err);
@@ -60,7 +70,7 @@ const BookingSuccessContent = () => {
     };
 
     confirmBooking();
-  }, [bookingId]);
+  }, [bookingId, hasLegacyDetails, sessionStatus]);
 
   if (loading) {
     return (
@@ -77,10 +87,26 @@ const BookingSuccessContent = () => {
 
   // Use fetched booking data or fall back to legacy URL params
   const courtName = booking?.court?.name ?? legacyCourt ?? "—";
+  const date = booking?.date ?? legacyDate ?? "—";
   const time = booking?.start_time ?? legacyTime ?? "—";
   const duration = String(booking?.duration ?? legacyDuration ?? "1");
   const total = String(booking?.total_price ?? legacyTotal ?? "—");
   const isPaid = booking?.paymentStatus === "paid";
+  const activeRole =
+    session?.user?.activeRole ?? (sessionStatus === "authenticated" ? "user" : "guest");
+  const primaryAction =
+    activeRole === "admin"
+      ? { href: "/admin/bookings", label: "Open Admin Bookings" }
+      : activeRole === "manager"
+        ? { href: "/manager/dashboard", label: "Open Manager HQ" }
+        : activeRole === "user"
+          ? { href: "/bookings", label: "View My Bookings" }
+          : { href: "/register", label: "Create Account" };
+  const statusCopy = isPaid
+    ? "Payment confirmed — see you on the pitch!"
+    : bookingId
+      ? "Booking received — final confirmation is syncing now."
+      : "Booking details ready — see you on the pitch!";
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
@@ -98,7 +124,7 @@ const BookingSuccessContent = () => {
               You&apos;re Booked!
             </h1>
             <p className="text-green-400 text-sm mt-2 font-semibold">
-              Payment confirmed — see you on the pitch! ⚽
+              {statusCopy}
             </p>
             {isPaid && (
               <div className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 bg-green-900/40 border border-green-700/60 rounded-full text-xs text-green-400 font-bold">
@@ -176,14 +202,14 @@ const BookingSuccessContent = () => {
           {/* Actions */}
           <div className="px-8 py-6 flex flex-col sm:flex-row gap-3">
             <Link
-              href="/bookings"
+              href={primaryAction.href}
               className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-black text-white uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 background: "linear-gradient(135deg, #15803d 0%, #22c55e 100%)",
                 boxShadow: "0 0 20px rgba(34,197,94,0.3)",
               }}
             >
-              View My Bookings <FaArrowRight size={11} />
+              {primaryAction.label} <FaArrowRight size={11} />
             </Link>
             <Link
               href="/"
@@ -195,7 +221,9 @@ const BookingSuccessContent = () => {
         </div>
 
         <p className="text-center text-gray-600 text-xs mt-6">
-          A confirmation email has been sent to your inbox.
+          {activeRole === "guest"
+            ? "Guests can keep browsing or create an account later to manage future bookings."
+            : "A confirmation email has been sent to your inbox."}
         </p>
       </div>
     </div>

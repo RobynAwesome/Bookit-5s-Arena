@@ -10,6 +10,7 @@ import {
   FaBroadcastTower,
   FaCheckCircle,
   FaCloud,
+  FaComments,
   FaExternalLinkAlt,
   FaGlobeAfrica,
   FaPlus,
@@ -44,6 +45,9 @@ export default function AdminIntegrationsPage() {
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupPhoneNumber, setLookupPhoneNumber] = useState("");
+  const [lookupResult, setLookupResult] = useState(null);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
@@ -247,11 +251,42 @@ export default function AdminIntegrationsPage() {
       icon: <FaGlobeAfrica className="text-cyan-300" />,
     },
     {
+      title: "WhatsApp OSINT",
+      body: health.providers?.whatsappOsint,
+      icon: <FaComments className="text-emerald-300" />,
+    },
+    {
       title: "Vercel Sandbox",
       body: health.sandbox,
       icon: <FaCloud className="text-cyan-300" />,
     },
   ];
+
+  async function handleLookupWhatsApp(event) {
+    event.preventDefault();
+    setLookupLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/admin/integrations/whatsapp-osint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: lookupPhoneNumber }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Lookup failed");
+      }
+
+      setLookupResult(payload.result || null);
+    } catch (lookupError) {
+      setLookupResult(null);
+      setError(lookupError.message);
+    } finally {
+      setLookupLoading(false);
+    }
+  }
 
   return (
     <motion.div
@@ -553,6 +588,80 @@ export default function AdminIntegrationsPage() {
                 </div>
               ) : null}
             </div>
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-3xl border border-gray-800 bg-gray-900 p-5">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+              Admin-only WhatsApp OSINT
+            </div>
+            <h2 className="mt-2 text-2xl font-black text-white">
+              Manual contact review
+            </h2>
+            <p className="mt-2 text-sm text-gray-400">
+              This is restricted to explicit admin lookups. It is rate-limited, it never runs publicly, and it stores only a hashed fingerprint in telemetry.
+            </p>
+
+            <form onSubmit={handleLookupWhatsApp} className="mt-5 space-y-3">
+              <input
+                value={lookupPhoneNumber}
+                onChange={(event) => setLookupPhoneNumber(event.target.value)}
+                placeholder="+27637820245"
+                className="w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-white outline-none transition focus:border-green-500"
+                required
+              />
+              <button
+                type="submit"
+                disabled={lookupLoading || !lookupPhoneNumber.trim()}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <FaSearch size={11} />
+                {lookupLoading ? "Reviewing…" : "Review Number"}
+              </button>
+            </form>
+          </div>
+
+          <div className="rounded-3xl border border-gray-800 bg-gray-900 p-5">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+              Latest lookup
+            </div>
+            {lookupResult ? (
+              <div className="mt-4 space-y-4">
+                <div className="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-4 text-sm text-gray-300">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-gray-500">Number</div>
+                      <div className="mt-1 font-semibold text-white">{lookupResult.phoneNumber}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-gray-500">Fingerprint</div>
+                      <div className="mt-1 font-semibold text-white">{lookupResult.fingerprint}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-gray-500">Display name</div>
+                      <div className="mt-1 font-semibold text-white">{lookupResult.displayName || "Unavailable"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-gray-500">About</div>
+                      <div className="mt-1 font-semibold text-white">{lookupResult.about || "Unavailable"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-gray-500">Registered</div>
+                      <div className="mt-1 font-semibold text-white">{lookupResult.isRegistered ? "Yes" : "No / unknown"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-gray-500">Business account</div>
+                      <div className="mt-1 font-semibold text-white">{lookupResult.isBusiness ? "Yes" : "No / unknown"}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-4 text-sm text-gray-500">
+                Run an admin review to inspect WhatsApp OSINT metadata for a number.
+              </div>
+            )}
           </div>
         </section>
       </div>

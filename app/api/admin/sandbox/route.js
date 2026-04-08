@@ -8,6 +8,7 @@ import {
   runSandboxPreset,
   stopSandboxInstance,
 } from "@/lib/integrations/vercelSandbox";
+import { logBraintrustEvent } from "@/lib/integrations/braintrust";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -51,11 +52,41 @@ export async function POST(request) {
 
     if (payload.action === "run") {
       const result = await runSandboxPreset(payload.preset);
+      void logBraintrustEvent({
+        input: {
+          route: "/api/admin/sandbox",
+          action: "run",
+          preset: payload.preset,
+        },
+        output: {
+          sandboxId: result.sandboxId,
+          status: result.status,
+        },
+        metadata: {
+          category: "admin-sandbox",
+          action: "run",
+          preset: payload.preset,
+          actor: session?.user?.email || "",
+        },
+      });
       return NextResponse.json(result);
     }
 
     if (payload.action === "stop") {
       const result = await stopSandboxInstance(payload.sandboxId);
+      void logBraintrustEvent({
+        input: {
+          route: "/api/admin/sandbox",
+          action: "stop",
+          sandboxId: payload.sandboxId,
+        },
+        output: result,
+        metadata: {
+          category: "admin-sandbox",
+          action: "stop",
+          actor: session?.user?.email || "",
+        },
+      });
       return NextResponse.json(result);
     }
 

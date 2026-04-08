@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 import { answerSupportQuestion } from '@/lib/supportAI';
 import { verifyBotRequest } from '@/lib/security/botid';
+import { logBraintrustEvent } from '@/lib/integrations/braintrust';
 
 const SYSTEM_PROMPT = `You are the friendly AI assistant for 5s Arena, a 5-a-side football venue in Cape Town, South Africa.
 
@@ -159,6 +160,24 @@ export async function POST(request) {
     if (!reply) {
       return Response.json({ error: 'AI service temporarily unavailable.' }, { status: 503 });
     }
+
+    void logBraintrustEvent({
+      input: {
+        route: "/api/chat",
+        provider,
+        message,
+      },
+      output: {
+        reply,
+      },
+      metadata: {
+        category: "support-chat",
+        provider,
+      },
+      scores: {
+        response_length: reply.length,
+      },
+    });
 
     return Response.json({ reply, provider });
   } catch (err) {

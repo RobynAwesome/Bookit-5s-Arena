@@ -3,92 +3,73 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ── WMO weather code → description + emoji ───────────────────────────────
-const WMO_CODES = {
-  0:  { label: 'Clear Sky',        emoji: '☀️' },
-  1:  { label: 'Mainly Clear',     emoji: '🌤️' },
-  2:  { label: 'Partly Cloudy',    emoji: '⛅' },
-  3:  { label: 'Overcast',         emoji: '☁️' },
-  45: { label: 'Foggy',            emoji: '🌫️' },
-  48: { label: 'Icy Fog',          emoji: '🌫️' },
-  51: { label: 'Light Drizzle',    emoji: '🌦️' },
-  53: { label: 'Drizzle',          emoji: '🌦️' },
-  55: { label: 'Heavy Drizzle',    emoji: '🌧️' },
-  61: { label: 'Light Rain',       emoji: '🌧️' },
-  63: { label: 'Rain',             emoji: '🌧️' },
-  65: { label: 'Heavy Rain',       emoji: '🌧️' },
-  71: { label: 'Light Snow',       emoji: '🌨️' },
-  73: { label: 'Snow',             emoji: '❄️' },
-  75: { label: 'Heavy Snow',       emoji: '❄️' },
-  80: { label: 'Rain Showers',     emoji: '🌦️' },
-  81: { label: 'Rain Showers',     emoji: '🌦️' },
-  82: { label: 'Violent Showers',  emoji: '⛈️' },
-  95: { label: 'Thunderstorm',     emoji: '⛈️' },
-  96: { label: 'Hail Storm',       emoji: '⛈️' },
-  99: { label: 'Heavy Hail Storm', emoji: '⛈️' },
-};
-
-const getCondition = (code) => WMO_CODES[code] ?? { label: 'Unknown', emoji: '🌡️' };
-
-// Cape Town coordinates
-const LAT = -33.9249;
-const LON = 18.4241;
-const API_URL =
-  `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-  `&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m,relativehumidity_2m` +
-  `&timezone=Africa%2FJohannesburg&wind_speed_unit=kmh`;
-
 export default function WeatherWidget() {
-  const [weather, setWeather] = useState(null);
+  const [locations, setLocations] = useState([]);
+  const [activeSlug, setActiveSlug] = useState('arena');
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Check cached data first (15-min TTL)
-    try {
-      const cached = sessionStorage.getItem('cpt_weather');
-      if (cached) {
-        const { data, ts } = JSON.parse(cached);
-        if (Date.now() - ts < 15 * 60 * 1000) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setWeather(data);
-          // eslint-disable-next-line react-hooks/set-state-in-effect
+    let mounted = true;
+
+    async function loadWeather() {
+      try {
+        const cached = sessionStorage.getItem('featured_weather_locations');
+        if (cached) {
+          const { data, ts } = JSON.parse(cached);
+          if (Date.now() - ts < 15 * 60 * 1000) {
+            if (mounted) {
+              setLocations(data);
+              setActiveSlug(data[0]?.slug || 'arena');
+              setLoading(false);
+            }
+            return;
+          }
+        }
+      } catch {}
+
+      try {
+        const response = await fetch('/api/weather/locations', { cache: 'no-store' });
+        const payload = await response.json();
+
+        if (!response.ok || !Array.isArray(payload.locations)) {
+          throw new Error(payload.error || 'Weather unavailable');
+        }
+
+        if (mounted) {
+          setLocations(payload.locations);
+          setActiveSlug(payload.locations[0]?.slug || 'arena');
           setLoading(false);
-          return;
+        }
+
+        try {
+          sessionStorage.setItem(
+            'featured_weather_locations',
+            JSON.stringify({ data: payload.locations, ts: Date.now() }),
+          );
+        } catch {}
+      } catch {
+        if (mounted) {
+          setError(true);
+          setLoading(false);
         }
       }
-    } catch {}
+    }
 
-    fetch(API_URL)
-      .then(r => r.json())
-      .then(data => {
-        const c = data.current;
-        const payload = {
-          temp:       Math.round(c.temperature_2m),
-          feelsLike:  Math.round(c.apparent_temperature),
-          code:       c.weathercode,
-          wind:       Math.round(c.windspeed_10m),
-          humidity:   c.relativehumidity_2m,
-          fetchedAt:  new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }),
-        };
-        setWeather(payload);
-        setLoading(false);
-        try {
-          sessionStorage.setItem('cpt_weather', JSON.stringify({ data: payload, ts: Date.now() }));
-        } catch {}
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
+    loadWeather();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Don't render if there's an error (fail silently)
-  if (error) return null;
+  if (error) {
+    return null;
+  }
 
-  const condition = weather ? getCondition(weather.code) : null;
+  const activeWeather =
+    locations.find((location) => location.slug === activeSlug) || locations[0] || null;
 
-  // Temperature comfort level → color
   const getTempColor = (temp) => {
     if (temp >= 35) return 'text-red-400';
     if (temp >= 28) return 'text-orange-400';
@@ -97,33 +78,27 @@ export default function WeatherWidget() {
     return 'text-blue-500';
   };
 
-  // Is it good weather for football? ⚽
-  const isFootballWeather = weather && weather.temp >= 15 && weather.temp <= 28 && weather.code <= 3;
-
   return (
     <motion.div
-      className="bg-black/80 border-y border-gray-800/60 py-4 overflow-hidden"
+      className="overflow-hidden border-y border-gray-800/60 bg-black/80 py-4"
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.2 }}
     >
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="mx-auto max-w-6xl px-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-
-          {/* Left — location + label */}
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-green-400 text-lg">📍</span>
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="text-lg text-green-400">📍</span>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold leading-none mb-0.5">
-                Cape Town Weather
+              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                Matchday Weather Pulse
               </p>
-              <p className="text-[9px] text-gray-700 uppercase tracking-wider">
-                Milnerton · Hellenic Football Club
+              <p className="text-[9px] uppercase tracking-wider text-gray-700">
+                Venue, South Africa, and Premier League watch cities
               </p>
             </div>
           </div>
 
-          {/* Centre — main weather data */}
           <AnimatePresence mode="wait">
             {loading ? (
               <motion.div
@@ -133,97 +108,128 @@ export default function WeatherWidget() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-6 w-20 bg-gray-800 rounded animate-pulse" />
+                {[1, 2, 3].map((index) => (
+                  <div
+                    key={index}
+                    className="h-6 w-20 animate-pulse rounded bg-gray-800"
+                  />
                 ))}
               </motion.div>
-            ) : weather ? (
+            ) : activeWeather ? (
               <motion.div
-                key="data"
+                key={activeWeather.slug}
                 className="flex flex-wrap items-center gap-4 md:gap-6"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.4 }}
               >
-                {/* Condition emoji + temp */}
                 <div className="flex items-center gap-2">
                   <motion.span
                     className="text-2xl leading-none"
                     animate={{ rotate: [0, 5, -5, 0] }}
                     transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    {condition.emoji}
+                    {activeWeather.emoji}
                   </motion.span>
                   <div>
                     <span
-                      className={`font-black text-2xl leading-none ${getTempColor(weather.temp)}`}
+                      className={`text-2xl font-black leading-none ${getTempColor(activeWeather.temperature)}`}
                       style={{ fontFamily: 'Impact, Arial Black, sans-serif' }}
                     >
-                      {weather.temp}°C
+                      {activeWeather.temperature}°C
                     </span>
-                    <p className="text-[9px] text-gray-500 leading-none mt-0.5 uppercase tracking-wide">
-                      {condition.label}
+                    <p className="mt-0.5 text-[9px] uppercase tracking-wide text-gray-500">
+                      {activeWeather.label} · {activeWeather.condition}
                     </p>
                   </div>
                 </div>
 
-                {/* Divider */}
-                <div className="w-px h-8 bg-gray-800 hidden sm:block" />
+                <div className="hidden h-8 w-px bg-gray-800 sm:block" />
 
-                {/* Feels like */}
                 <div className="text-center">
-                  <p className="text-white font-bold text-sm leading-none">{weather.feelsLike}°C</p>
-                  <p className="text-[9px] text-gray-600 uppercase tracking-wide mt-0.5">Feels Like</p>
+                  <p className="text-sm font-bold leading-none text-white">
+                    {activeWeather.feelsLike}°C
+                  </p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-wide text-gray-600">
+                    Feels Like
+                  </p>
                 </div>
 
-                {/* Wind */}
                 <div className="text-center">
-                  <p className="text-white font-bold text-sm leading-none">{weather.wind} km/h</p>
-                  <p className="text-[9px] text-gray-600 uppercase tracking-wide mt-0.5">💨 Wind</p>
+                  <p className="text-sm font-bold leading-none text-white">
+                    {activeWeather.wind} km/h
+                  </p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-wide text-gray-600">
+                    💨 Wind
+                  </p>
                 </div>
 
-                {/* Humidity */}
                 <div className="text-center">
-                  <p className="text-white font-bold text-sm leading-none">{weather.humidity}%</p>
-                  <p className="text-[9px] text-gray-600 uppercase tracking-wide mt-0.5">💧 Humidity</p>
+                  <p className="text-sm font-bold leading-none text-white">
+                    {activeWeather.humidity}%
+                  </p>
+                  <p className="mt-0.5 text-[9px] uppercase tracking-wide text-gray-600">
+                    💧 Humidity
+                  </p>
                 </div>
 
-                {/* Football weather tag */}
-                {isFootballWeather && (
+                {activeWeather.footballReady ? (
                   <motion.div
-                    className="flex items-center gap-1.5 bg-green-900/40 border border-green-700/50 rounded-full px-3 py-1"
+                    className="flex items-center gap-1.5 rounded-full border border-green-700/50 bg-green-900/40 px-3 py-1"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.3 }}
                   >
                     <span className="text-sm">⚽</span>
-                    <span className="text-green-400 text-[10px] font-black uppercase tracking-wider">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-green-400">
                       Perfect Football Weather!
                     </span>
                   </motion.div>
-                )}
+                ) : null}
               </motion.div>
             ) : null}
           </AnimatePresence>
 
-          {/* Right — attribution + time */}
-          {weather && (
-            <div className="text-right min-w-0">
-              <p className="text-[9px] text-gray-700 uppercase tracking-wider">
-                via Open-Meteo · {weather.fetchedAt}
-              </p>
-              <motion.a
-                href="https://open-meteo.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[9px] text-gray-800 hover:text-gray-600 transition-colors"
-              >
-                open-meteo.com
-              </motion.a>
+          {locations.length ? (
+            <div className="flex min-w-0 flex-wrap justify-end gap-2">
+              {locations.map((location) => (
+                <button
+                  key={location.slug}
+                  onClick={() => setActiveSlug(location.slug)}
+                  className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] transition ${
+                    activeSlug === location.slug
+                      ? 'border-green-500 bg-green-500/15 text-green-300'
+                      : 'border-gray-800 bg-gray-900/70 text-gray-400 hover:border-gray-700 hover:text-white'
+                  }`}
+                >
+                  {location.label}
+                </button>
+              ))}
             </div>
-          )}
+          ) : null}
         </div>
+
+        {activeWeather ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-800/60 pt-3 text-[10px] uppercase tracking-[0.16em] text-gray-500">
+            <span>{activeWeather.subtitle}</span>
+            <span>
+              Updated{' '}
+              {new Date(activeWeather.fetchedAt).toLocaleTimeString('en-ZA', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </span>
+            <motion.a
+              href="https://open-meteo.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-600 transition-colors hover:text-gray-400"
+            >
+              via Open-Meteo
+            </motion.a>
+          </div>
+        ) : null}
       </div>
     </motion.div>
   );

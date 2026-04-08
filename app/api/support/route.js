@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { answerSupportQuestion, QUICK_QUESTIONS } from '@/lib/supportAI';
 import { rateLimit } from '@/lib/rateLimit';
 import { verifyBotRequest } from '@/lib/security/botid';
+import { logBraintrustEvent } from '@/lib/integrations/braintrust';
 
 export async function POST(request) {
   const botVerification = await verifyBotRequest();
@@ -27,6 +28,23 @@ export async function POST(request) {
     }
 
     const result = answerSupportQuestion(message);
+
+    void logBraintrustEvent({
+      input: {
+        route: "/api/support",
+        message,
+      },
+      output: {
+        answer: result.answer,
+        confidence: result.confidence,
+      },
+      metadata: {
+        category: "support-faq",
+      },
+      scores: {
+        confidence: result.confidence,
+      },
+    });
 
     return NextResponse.json({
       answer: result.answer,

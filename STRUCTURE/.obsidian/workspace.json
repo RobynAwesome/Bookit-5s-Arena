@@ -1,0 +1,34 @@
+{
+  "main": {
+    "id": "bookit-structure",
+    "type": "split",
+    "children": [
+      {
+        "id": "left",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "00-Home/Dashboard.md",
+            "mode": "preview",
+            "source": false
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "left-sidebar",
+    "type": "split",
+    "children": [],
+    "direction": "horizontal"
+  },
+  "right": {
+    "id": "right-sidebar",
+    "type": "split",
+    "children": [],
+    "direction": "horizontal"
+  },
+  "active": "left"
+}

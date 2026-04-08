@@ -1,0 +1,9 @@
+{
+  "project": "Bookit 5s Arena",
+  "vaultRoot": "STRUCTURE",
+  "updatedAt": "2026-04-08",
+  "notes": [
+    "This is a project-specific handoff vault shaped after the Schematics reference.",
+    "The smart-env folders are intentionally lightweight placeholders for future Obsidian indexing and context tools."
+  ]
+}

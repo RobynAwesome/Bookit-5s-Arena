@@ -144,6 +144,35 @@ const STANDINGS_VIEW_LABELS = {
   goals: "Goals",
 };
 
+const STATS_CATEGORY_LABELS = {
+  goals: "Goals",
+  assists: "Assists",
+  yellowCards: "Yellow Cards",
+  redCards: "Red Cards",
+};
+
+function PlayerAvatar({ player }) {
+  if (player?.image) {
+    return (
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-zinc-100 ring-1 ring-black/5">
+        <Image
+          src={player.image}
+          alt={player.name}
+          fill
+          unoptimized
+          className="object-cover"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-black uppercase text-violet-700 ring-1 ring-violet-200">
+      {player?.initials || "PL"}
+    </div>
+  );
+}
+
 function FormDot({ result }) {
   const styles = {
     W: "bg-emerald-600 text-white",
@@ -394,16 +423,80 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
   );
 }
 
+function StatsLeaderboard({ leaders }) {
+  return (
+    <div className="divide-y divide-zinc-200">
+      {leaders.map((leader, index) => (
+        <motion.article
+          key={`${leader.player.id}-${leader.stat.key}`}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, delay: index * 0.03 }}
+          className="grid gap-4 px-4 py-4 sm:grid-cols-[1.2fr_1fr_auto] sm:px-6"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-7 text-sm font-black text-zinc-500">{leader.rank}</div>
+            <PlayerAvatar player={leader.player} />
+            <div className="min-w-0">
+              <div className="truncate text-lg font-semibold text-zinc-950">
+                {leader.player.name}
+              </div>
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                Premier League
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative h-10 w-10 shrink-0 rounded-full bg-zinc-50 ring-1 ring-black/5">
+              {leader.team.logo ? (
+                <Image
+                  src={leader.team.logo}
+                  alt={leader.team.name}
+                  fill
+                  unoptimized
+                  className="object-contain p-1"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-900 text-[10px] font-black uppercase text-white">
+                  {leader.team.shortName || leader.team.name?.slice(0, 3) || "FC"}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-base font-semibold text-zinc-950">
+                {leader.team.name}
+              </div>
+              <div className="text-xs text-zinc-500">{leader.minutes} minutes</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-start sm:justify-end">
+            <div className="rounded-[20px] bg-violet-900 px-4 py-3 text-right text-white shadow-[0_12px_30px_rgba(76,29,149,0.18)]">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-200">
+                {leader.stat.shortLabel}
+              </div>
+              <div className="text-2xl font-black">{leader.stat.value}</div>
+            </div>
+          </div>
+        </motion.article>
+      ))}
+    </div>
+  );
+}
+
 export default function PremierLeagueFixturesHub() {
   const [meta, setMeta] = useState(null);
   const [matchesPayload, setMatchesPayload] = useState(null);
   const [newsPayload, setNewsPayload] = useState(null);
   const [standingsPayload, setStandingsPayload] = useState(null);
+  const [statsPayload, setStatsPayload] = useState(null);
   const [activeTab, setActiveTab] = useState("matches");
   const [season, setSeason] = useState("");
   const [loading, setLoading] = useState(true);
   const [newsLoading, setNewsLoading] = useState(false);
   const [standingsLoading, setStandingsLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [standingsViewOrder, setStandingsViewOrder] = useState([
     "overall",
     "form",
@@ -412,6 +505,7 @@ export default function PremierLeagueFixturesHub() {
     "goals",
   ]);
   const [activeStandingsView, setActiveStandingsView] = useState("overall");
+  const [activeStatsCategory, setActiveStatsCategory] = useState("goals");
   const [teamAnalysis, setTeamAnalysis] = useState(null);
   const [teamLoadingId, setTeamLoadingId] = useState("");
   const [error, setError] = useState("");
@@ -645,6 +739,58 @@ export default function PremierLeagueFixturesHub() {
       JSON.stringify(standingsViewOrder),
     );
   }, [standingsViewOrder]);
+
+  useEffect(() => {
+    if (
+      activeTab !== "stats" ||
+      !season ||
+      (statsPayload?.season?.year === Number(season) &&
+        statsPayload?.category === activeStatsCategory)
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    setStatsLoading(true);
+
+    async function loadStats() {
+      try {
+        const response = await fetch(
+          `/api/football/league/premier-league/stats?season=${season}&category=${activeStatsCategory}`,
+          {
+            cache: "no-store",
+          },
+        );
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Failed to load stats");
+        }
+
+        if (!cancelled) {
+          setStatsPayload(payload);
+          setStatsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setStatsPayload({
+            season: matchesPayload?.season,
+            category: activeStatsCategory,
+            leaders: [],
+            provider: { name: "stats-unavailable", status: "degraded" },
+            emptyState: "Stats are temporarily unavailable.",
+          });
+          setStatsLoading(false);
+        }
+      }
+    }
+
+    loadStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, season, activeStatsCategory, statsPayload?.season?.year, statsPayload?.category, matchesPayload?.season]);
 
   async function handleSelectTeam(teamId) {
     setTeamLoadingId(teamId);
@@ -1029,11 +1175,72 @@ export default function PremierLeagueFixturesHub() {
               </motion.div>
             ) : (
               <motion.div key="stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <EmptyTabState
-                  icon={<FaChartBar size={20} />}
-                  title="Stats tab queued for phase 4"
-                  description="This phase will add the leaderboard categories for goals, assists, yellow cards, and red cards."
-                />
+                <div className="grid gap-6 bg-[#faf7f2] px-4 py-6 sm:px-8">
+                  <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white">
+                    <div className="border-b border-zinc-200 px-6 py-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                        Player leaders
+                      </p>
+                      <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <h2 className="text-2xl font-black text-zinc-950">
+                          Premier League stat race
+                        </h2>
+                        <p className="text-sm text-zinc-500">
+                          Swipe across categories on mobile to move between the live leaderboards.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-b border-zinc-200 px-4 py-4 sm:px-6">
+                      <div className="flex gap-3 overflow-x-auto pb-1">
+                        {Object.entries(STATS_CATEGORY_LABELS).map(([categoryKey, label]) => (
+                          <button
+                            key={categoryKey}
+                            onClick={() => setActiveStatsCategory(categoryKey)}
+                            className={`shrink-0 rounded-full border px-5 py-3 text-sm font-semibold transition ${
+                              activeStatsCategory === categoryKey
+                                ? "border-transparent bg-[#1976d2] text-white shadow-[0_10px_25px_rgba(25,118,210,0.22)]"
+                                : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {statsLoading ? (
+                      <div className="space-y-4 px-6 py-6">
+                        {Array.from({ length: 8 }).map((_, index) => (
+                          <div
+                            key={index}
+                            className="h-20 animate-pulse rounded-[22px] bg-zinc-100"
+                          />
+                        ))}
+                      </div>
+                    ) : statsPayload?.leaders?.length ? (
+                      <StatsLeaderboard leaders={statsPayload.leaders} />
+                    ) : (
+                      <EmptyTabState
+                        icon={<FaChartBar size={20} />}
+                        title="Stats unavailable"
+                        description={
+                          statsPayload?.emptyState ||
+                          "The player leaderboard is not available for this season selection yet."
+                        }
+                      />
+                    )}
+                  </section>
+
+                  <section className="rounded-[28px] border border-zinc-200 bg-zinc-950 p-6 text-white">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
+                      Provider mix
+                    </p>
+                    <p className="mt-3 text-sm leading-6 text-zinc-300">
+                      Player leaders are currently sourced from the FPL player dataset while the iSports stat mapping is being finalized. The UI is already wired for the four public categories in the rollout plan.
+                    </p>
+                  </section>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

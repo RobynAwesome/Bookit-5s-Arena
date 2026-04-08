@@ -137,10 +137,34 @@ function EmptyTabState({ icon, title, description }) {
 export default function PremierLeagueFixturesHub() {
   const [meta, setMeta] = useState(null);
   const [matchesPayload, setMatchesPayload] = useState(null);
+  const [newsPayload, setNewsPayload] = useState(null);
   const [activeTab, setActiveTab] = useState("matches");
   const [season, setSeason] = useState("");
   const [loading, setLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const formatRelativeTime = (value) => {
+    if (!value) {
+      return "";
+    }
+
+    const publishedAt = new Date(value).getTime();
+    const diffMs = Date.now() - publishedAt;
+    const diffMinutes = Math.max(Math.round(diffMs / (60 * 1000)), 1);
+
+    if (diffMinutes < 60) {
+      return `${diffMinutes}m`;
+    }
+
+    const diffHours = Math.round(diffMinutes / 60);
+    if (diffHours < 24) {
+      return `${diffHours}h`;
+    }
+
+    const diffDays = Math.round(diffHours / 24);
+    return `${diffDays}d`;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -216,6 +240,55 @@ export default function PremierLeagueFixturesHub() {
       cancelled = true;
     };
   }, [season]);
+
+  useEffect(() => {
+    if (activeTab !== "news" || !season || newsPayload?.season?.year === Number(season)) {
+      return;
+    }
+
+    let cancelled = false;
+    setNewsLoading(true);
+
+    async function loadNews() {
+      try {
+        const response = await fetch(
+          `/api/football/league/premier-league/news?season=${season}`,
+          {
+            cache: "no-store",
+          },
+        );
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Failed to load news");
+        }
+
+        if (!cancelled) {
+          setNewsPayload(payload);
+          setNewsLoading(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setNewsPayload({
+            season: matchesPayload?.season,
+            provider: {
+              articles: "rss-og-enrichment",
+              videos: "youtube-unavailable",
+            },
+            articles: [],
+            videos: [],
+          });
+          setNewsLoading(false);
+        }
+      }
+    }
+
+    loadNews();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, season, newsPayload?.season?.year, matchesPayload?.season]);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f6f3ff_0%,#f8f5ef_42%,#f5f5f5_100%)] px-4 py-8 sm:px-6 lg:px-8">
@@ -376,11 +449,133 @@ export default function PremierLeagueFixturesHub() {
               </motion.div>
             ) : activeTab === "news" ? (
               <motion.div key="news" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <EmptyTabState
-                  icon={<FaNewspaper size={20} />}
-                  title="News tab queued for phase 2"
-                  description="The matches shell is live. Next, this tab gets editorial article cards, source imagery, and the YouTube reactor rail."
-                />
+                <div className="grid gap-6 bg-[#faf7f2] px-4 py-6 sm:px-8 lg:grid-cols-[1.35fr_0.85fr]">
+                  <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white">
+                    <div className="border-b border-zinc-200 px-6 py-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                        Editorial feed
+                      </p>
+                      <h2 className="mt-2 text-2xl font-black text-zinc-950">
+                        Live Premier League headlines
+                      </h2>
+                    </div>
+
+                    {newsLoading ? (
+                      <div className="space-y-4 px-6 py-6">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                          <div
+                            key={index}
+                            className="h-36 animate-pulse rounded-[24px] border border-zinc-200 bg-zinc-50"
+                          />
+                        ))}
+                      </div>
+                    ) : newsPayload?.articles?.length ? (
+                      <div className="divide-y divide-zinc-200">
+                        {newsPayload.articles.map((article) => (
+                          <a
+                            key={article.url}
+                            href={article.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="grid gap-4 px-5 py-5 transition hover:bg-zinc-50 sm:grid-cols-[1fr_260px]"
+                          >
+                            <div className="space-y-3">
+                              <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
+                                <span className="font-black text-zinc-700">{article.source}</span>
+                                <span>&middot;</span>
+                                <span>{formatRelativeTime(article.publishedAt)}</span>
+                              </div>
+                              <h3 className="text-2xl font-semibold leading-tight text-zinc-950">
+                                {article.title}
+                              </h3>
+                              <p className="text-sm leading-6 text-zinc-600">
+                                {article.summary}
+                              </p>
+                            </div>
+                            <div
+                              className="min-h-[180px] rounded-[22px] border border-zinc-200 bg-zinc-100 bg-cover bg-center"
+                              style={{
+                                backgroundImage: article.image
+                                  ? `linear-gradient(rgba(0,0,0,0.04), rgba(0,0,0,0.12)), url("${article.image}")`
+                                  : "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)",
+                              }}
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyTabState
+                        icon={<FaNewspaper size={20} />}
+                        title="No live articles available"
+                        description="The article feed is temporarily empty. The route is wired and will populate as soon as the feed sources respond."
+                      />
+                    )}
+                  </section>
+
+                  <section className="space-y-5">
+                    <div className="rounded-[28px] border border-zinc-200 bg-white">
+                      <div className="border-b border-zinc-200 px-6 py-5">
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                          Reactor channels
+                        </p>
+                        <h3 className="mt-2 text-xl font-black text-zinc-950">
+                          YouTube watchlist
+                        </h3>
+                      </div>
+
+                      {newsLoading ? (
+                        <div className="space-y-4 px-6 py-6">
+                          {Array.from({ length: 3 }).map((_, index) => (
+                            <div
+                              key={index}
+                              className="h-28 animate-pulse rounded-[22px] border border-zinc-200 bg-zinc-50"
+                            />
+                          ))}
+                        </div>
+                      ) : newsPayload?.videos?.length ? (
+                        <div className="space-y-4 px-6 py-6">
+                          {newsPayload.videos.map((video) => (
+                            <a
+                              key={video.id}
+                              href={video.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex gap-4 rounded-[22px] border border-zinc-200 p-3 transition hover:border-violet-300 hover:bg-violet-50/40"
+                            >
+                              <div
+                                className="h-24 w-36 shrink-0 rounded-[18px] bg-zinc-100 bg-cover bg-center"
+                                style={{
+                                  backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2)), url("${video.thumbnail}")`,
+                                }}
+                              />
+                              <div className="min-w-0">
+                                <div className="truncate text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
+                                  {video.reactor?.name || video.channelName}
+                                </div>
+                                <div className="mt-2 line-clamp-3 text-sm font-semibold leading-5 text-zinc-950">
+                                  {video.title}
+                                </div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="px-6 py-6 text-sm leading-6 text-zinc-500">
+                          The curated reactor rail is wired but the YouTube provider is unavailable right now. Add `YOUTUBE_RAPIDAPI_KEY` and `YOUTUBE_RAPIDAPI_HOST` to populate it automatically.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-[28px] border border-zinc-200 bg-zinc-950 p-6 text-white">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
+                        Provider mix
+                      </p>
+                      <p className="mt-3 text-sm leading-6 text-zinc-300">
+                        Articles are aggregated from football RSS feeds and enriched with OG metadata. Videos are layered in from the curated reactor registry using the RapidAPI YouTube adapter when configured.
+                      </p>
+                    </div>
+                  </section>
+                </div>
               </motion.div>
             ) : activeTab === "standings" ? (
               <motion.div key="standings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

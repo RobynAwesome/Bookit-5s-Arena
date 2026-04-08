@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaEnvelope, FaFutbol } from "react-icons/fa";
-
-const STORAGE_KEY_DISMISSED = "5s_newsletter_dismissed_forever";
-const STORAGE_KEY_SUBSCRIBED = "5s_newsletter_subscribed";
+import {
+  NEWSLETTER_POPUP_DISMISSED_KEY,
+  NEWSLETTER_POPUP_SUBSCRIBED_KEY,
+} from "@/lib/popupPreferences";
 
 export default function NewsletterPopup() {
   const [show, setShow] = useState(false);
@@ -14,8 +15,8 @@ export default function NewsletterPopup() {
   const [dontShow, setDontShow] = useState(false);
 
   useEffect(() => {
-    const dismissedForever = localStorage.getItem(STORAGE_KEY_DISMISSED);
-    const subscribed = localStorage.getItem(STORAGE_KEY_SUBSCRIBED);
+    const dismissedForever = localStorage.getItem(NEWSLETTER_POPUP_DISMISSED_KEY);
+    const subscribed = localStorage.getItem(NEWSLETTER_POPUP_SUBSCRIBED_KEY);
     if (dismissedForever || subscribed) return;
 
     const timer = setTimeout(() => setShow(true), 20000);
@@ -35,7 +36,7 @@ export default function NewsletterPopup() {
       });
       if (!res.ok) throw new Error("Failed");
       setStatus("success");
-      localStorage.setItem(STORAGE_KEY_SUBSCRIBED, "true");
+      localStorage.setItem(NEWSLETTER_POPUP_SUBSCRIBED_KEY, "true");
       setTimeout(() => setShow(false), 3000);
     } catch {
       setStatus("error");
@@ -45,7 +46,7 @@ export default function NewsletterPopup() {
   const dismiss = () => {
     setShow(false);
     if (dontShow) {
-      localStorage.setItem(STORAGE_KEY_DISMISSED, "true");
+      localStorage.setItem(NEWSLETTER_POPUP_DISMISSED_KEY, "true");
     }
   };
 

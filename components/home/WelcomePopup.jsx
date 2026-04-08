@@ -4,15 +4,14 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTrophy, FaTimes, FaFutbol, FaArrowRight } from 'react-icons/fa';
 import Link from 'next/link';
-
-const STORAGE_KEY = '5sa_hide_welcome_popup';
+import { WELCOME_POPUP_STORAGE_KEY } from '@/lib/popupPreferences';
 
 export default function WelcomePopup() {
   const [isVisible, setIsVisible] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
   useEffect(() => {
-    const hidden = localStorage.getItem(STORAGE_KEY);
+    const hidden = localStorage.getItem(WELCOME_POPUP_STORAGE_KEY);
     if (!hidden) {
       const timer = setTimeout(() => setIsVisible(true), 3000);
       return () => clearTimeout(timer);
@@ -22,7 +21,7 @@ export default function WelcomePopup() {
   const handleClose = () => {
     setIsVisible(false);
     if (dontShowAgain) {
-      localStorage.setItem(STORAGE_KEY, '1');
+      localStorage.setItem(WELCOME_POPUP_STORAGE_KEY, '1');
     }
   };
 

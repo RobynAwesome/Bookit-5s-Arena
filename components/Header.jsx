@@ -8,6 +8,7 @@ import {
   FaSignOutAlt,
   FaCalendarAlt,
   FaBars,
+  FaChevronRight,
   FaTimes,
   FaChartBar,
   FaFutbol,
@@ -79,13 +80,20 @@ const Header = () => {
   const { theme, themes, cycleTheme } = useTheme();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [authMode, setAuthMode] = useState(() =>
-    pathname === "/register" ? "register" : "login",
-  );
 
   const activeRole = session?.user?.activeRole || session?.user?.role;
   const hideDesktopSearch = pathname === "/login" || pathname === "/register" || pathname === "/role-select";
   const onAuthScreen = pathname === "/login" || pathname === "/register";
+  const requestedMode =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("mode")
+      : null;
+  const authMode =
+    pathname === "/register"
+      ? "register"
+      : pathname === "/login" && requestedMode === "register"
+        ? "register"
+        : "login";
 
   const navLinks =
     activeRole === "admin"   ? ADMIN_NAV :
@@ -107,27 +115,26 @@ const Header = () => {
   }, [session?.user?.image]);
 
   useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (pathname === "/register") {
-      setAuthMode("register");
-      return;
+    if (typeof document === "undefined") {
+      return undefined;
     }
 
-    if (pathname !== "/login") {
-      setAuthMode("login");
-      return;
+    const previousOverflow = document.body.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    } else {
+      document.body.style.overflow = previousOverflow || "";
+      document.body.style.touchAction = previousTouchAction || "";
     }
 
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const requestedMode = new URLSearchParams(window.location.search).get("mode");
-    setAuthMode(requestedMode === "register" ? "register" : "login");
-  }, [pathname]);
+    return () => {
+      document.body.style.overflow = previousOverflow || "";
+      document.body.style.touchAction = previousTouchAction || "";
+    };
+  }, [mobileOpen]);
 
   return (
     <header className="bg-gray-950/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
@@ -281,33 +288,149 @@ const Header = () => {
       {/* ── Mobile Sidebar (Minimal Pattern) ── */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            className="md:hidden bg-gray-950 border-t border-gray-800 px-4 py-6 space-y-2 overflow-y-auto max-h-[calc(100vh-64px)] shadow-2xl"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-          >
-            {navLinks.map((tab) => (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                onClick={() => setMobileOpen(false)}
-                className={mobileClass(tab.href)}
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close navigation menu"
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.div
+              className="fixed inset-x-4 bottom-4 top-24 z-40 overflow-hidden rounded-[28px] border border-gray-800 bg-gray-950/98 shadow-[0_30px_90px_rgba(0,0,0,0.65)] md:hidden"
+              initial={{ opacity: 0, y: -16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 240, damping: 26 }}
+            >
+              <div
+                className="flex h-full flex-col overflow-y-auto px-4 py-4"
+                style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
               >
-                {tab.icon} {tab.label}
-              </Link>
-            ))}
-            {session && (
-              <div className="pt-4 border-t border-gray-800 mt-4">
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="w-full text-left px-3 py-3 text-sm font-black text-red-500 uppercase tracking-widest flex items-center gap-2"
-                >
-                  <FaSignOutAlt size={14} /> Log Out
-                </button>
+                <div className="mb-4 flex items-start justify-between gap-3 border-b border-gray-800 pb-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-green-400">
+                      Navigation
+                    </p>
+                    <p className="mt-1 text-sm text-gray-400">
+                      {session
+                        ? `Signed in as ${session.user.name?.split(" ")[0] || "Player"}`
+                        : "Browse courts, fixtures, competitions and more"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-full bg-gray-900 p-2 text-gray-400 transition hover:bg-gray-800 hover:text-white"
+                  >
+                    <FaTimes size={16} />
+                  </button>
+                </div>
+
+                {!hideDesktopSearch && (
+                  <div className="mb-4 rounded-2xl border border-gray-800 bg-gray-900/80 p-3">
+                    <SearchModal />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {navLinks.map((tab) => (
+                    <Link
+                      key={tab.href}
+                      href={tab.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={`${mobileClass(tab.href)} w-full justify-between border ${
+                        pathname === tab.href
+                          ? "border-green-700 bg-green-500/10 text-white"
+                          : "border-gray-800 bg-gray-900/80 text-gray-300 hover:border-gray-700 hover:bg-gray-900"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {tab.icon} {tab.label}
+                      </span>
+                      <FaChevronRight size={12} className="text-gray-500" />
+                    </Link>
+                  ))}
+                </div>
+
+                {session ? (
+                  <div className="mt-4 space-y-3 border-t border-gray-800 pt-4">
+                    <Link
+                      href="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900/80 px-4 py-3"
+                    >
+                      <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-green-500 bg-gray-900">
+                        {session.user.image && !imgError ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={session.user.image}
+                            alt="Profile"
+                            className="h-full w-full rounded-full object-cover"
+                            onError={() => setImgError(true)}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center rounded-full bg-linear-to-br from-green-600 to-emerald-800 text-sm font-black text-white">
+                            {session.user.name?.[0]?.toUpperCase() || "P"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black uppercase tracking-[0.18em] text-white">
+                          {session.user.name || "Player"}
+                        </p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-green-400">
+                          {session.user.activeRole || "Player"}
+                        </p>
+                      </div>
+                    </Link>
+
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="flex w-full items-center justify-between rounded-2xl border border-red-900/60 bg-red-500/10 px-4 py-3 text-left text-sm font-black uppercase tracking-widest text-red-400"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FaSignOutAlt size={14} /> Log Out
+                      </span>
+                      <FaChevronRight size={12} className="text-red-300" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4 grid gap-2 border-t border-gray-800 pt-4">
+                    {(!onAuthScreen || authMode !== "login") && (
+                      <Link
+                        href="/login"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-2xl border border-gray-800 bg-gray-900/80 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-gray-200"
+                      >
+                        Login
+                      </Link>
+                    )}
+                    {(!onAuthScreen || authMode !== "register") && (
+                      <Link
+                        href="/register"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-2xl bg-green-600 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-white shadow-[0_0_18px_rgba(34,197,94,0.28)]"
+                      >
+                        Register
+                      </Link>
+                    )}
+                  </div>
+                )}
+
+                {session && (
+                  <div className="mt-4 flex items-center justify-between rounded-2xl border border-gray-800 bg-gray-900/80 px-4 py-3">
+                    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-gray-500">
+                      Presence
+                    </span>
+                    <OnlineStatus />
+                  </div>
+                )}
               </div>
-            )}
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </header>

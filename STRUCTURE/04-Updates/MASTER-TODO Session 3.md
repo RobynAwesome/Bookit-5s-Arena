@@ -31,7 +31,8 @@ Next:
 
 - [ ] finish current overlapping edits already present in git status
 - [ ] publish a short handoff note for changed files and intended next actions
-- [ ] confirm whether reward/referral/config changes are included in that lane
+- [x] confirm current lane is mainly site-url/env normalization and nav/search cleanup
+- [ ] confirm whether any deeper reward/referral changes are intended beyond share URL normalization
 
 Known active file set:
 - `STRUCTURE/04-Updates/Project Status.md`
@@ -52,6 +53,8 @@ Known active file set:
 
 Next:
 - complete feature/code lane safely
+- verify centralized `SITE_URL` behavior across metadata, RSS, robots, sitemap, Stripe, email, and referral links
+- verify search modal and bottom navbar route-change behavior after refactor
 - avoid editing Session 3 coordination notes unless reconciling with this board
 
 ### `BLUE` User / Client

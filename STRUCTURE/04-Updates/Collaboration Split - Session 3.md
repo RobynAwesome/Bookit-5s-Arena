@@ -40,6 +40,13 @@ Files currently showing live edits and therefore treated as owned by the paralle
 - `lib/sendBookingConfirmation.js`
 - `package.json`
 
+Observed functional scope from current diff:
+- centralizing `SITE_URL` and env-driven canonical origin handling
+- routing metadata hardening for `layout`, `robots`, `sitemap`, `rss`, and referral links
+- checkout/email/notification links moving to shared site constants
+- `SearchModal` and `BottomNavbar` state handling being refactored around route changes and interaction resets
+- `package.json` build script switching back to linted builds
+
 ## Merge Protocol
 
 1. Finish work inside the owned lane only.
@@ -57,7 +64,9 @@ Files currently showing live edits and therefore treated as owned by the paralle
 ### Codex App
 
 - appears to be inside active product/config/runtime changes
-- needs to publish final intent before reward/referral code can be safely continued
+- current lane is primarily origin/env normalization plus search/nav interaction cleanup
+- reward work is only adjacent in this lane through referral share URL normalization, not a full reward-system rewrite
+- still needs to publish final intent before reward/referral code can be safely continued
 
 ## Immediate Next Move
 

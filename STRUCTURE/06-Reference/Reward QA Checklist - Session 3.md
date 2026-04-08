@@ -25,6 +25,9 @@ This checklist is for validating the live reward system after the overlapping re
 - [ ] register a new user using a referral path
 - [ ] confirm referral points persist on the original user
 - [ ] confirm referral chain depth and points are correct
+- [ ] confirm duplicate use of a referral code is rejected
+- [ ] confirm self-referral is rejected
+- [ ] confirm share URL uses the correct site domain
 
 ## Manager
 
@@ -32,6 +35,7 @@ This checklist is for validating the live reward system after the overlapping re
 - [ ] confirm manager-specific reward copy is accurate
 - [ ] confirm manager views do not expose broken or placeholder-only perks
 - [ ] confirm manager actions that should affect rewards actually do so
+- [ ] reconcile `/rewards` manager view with the manager dashboard "coming soon" message
 
 ## Admin
 
@@ -44,6 +48,7 @@ This checklist is for validating the live reward system after the overlapping re
 - [ ] compare `Booking` records against reward totals
 - [ ] compare `User.referralPoints` and `User.referralChain` against displayed referral data
 - [ ] confirm no negative or duplicate reward accumulation occurs
+- [ ] confirm birthday claim reward behavior is intentionally included in `referralPoints`
 
 ## Closeout
 

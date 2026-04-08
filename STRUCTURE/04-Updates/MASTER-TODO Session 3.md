@@ -73,10 +73,14 @@ Next:
 - [x] reward page exists
 - [x] rewards API exists
 - [x] referral data model exists on `User`
-- [ ] verify `/api/referral` end-to-end after parallel lane stabilizes
+- [x] referral API exists with `GET` and `POST` handlers
+- [x] 5-level referral point ladder is implemented in code
+- [ ] verify `/api/referral` end-to-end with real authenticated users after parallel lane stabilizes
 - [ ] replace placeholder achievements with real tracked signals
 - [ ] verify perk redemption logic and manager/admin visibility
 - [ ] verify rewards copy, progression rules, and data truth against bookings/history
+- [ ] review birthday reward interaction with `referralPoints` and confirm product intent
+- [ ] review manager dashboard messaging where rewards/profile still says "coming soon"
 - [ ] add reward-system QA checklist to admin/handoff docs once code lane is stable
 
 ### `AMBER` QA / Product Safety

@@ -44,6 +44,30 @@ const NavIcon = ({ children }) => (
 
 import { useTheme } from "@/context/ThemeContext";
 
+const ThemeGlyph = ({ theme }) => {
+  if (theme === "light") {
+    return (
+      <span className="relative flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.45)]">
+        <span className="absolute inset-[3px] rounded-full border border-amber-100/70" />
+      </span>
+    );
+  }
+
+  if (theme === "read") {
+    return (
+      <span className="flex h-4 w-4 items-center justify-center rounded bg-stone-200 text-[8px] font-black text-stone-700 shadow-[0_0_0_1px_rgba(231,229,228,0.7)]">
+        R
+      </span>
+    );
+  }
+
+  return (
+    <span className="relative flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_0_1px_rgba(74,222,128,0.35)]">
+      <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(74,222,128,0.55)]" />
+    </span>
+  );
+};
+
 const GUEST_NAV = [
   { href: "/#courts",             icon: <FaFutbol size={11} className="text-green-400" />,    label: "Book Court" },
   { href: "/events-and-services", icon: <FaBolt size={11} className="text-cyan-400" />,       label: "Events" },
@@ -187,7 +211,7 @@ const Header = () => {
             {/* Theme Toggle — cycle on click, hover shows name */}
             <motion.button
               onClick={cycleTheme}
-              className="relative flex items-center gap-1.5 px-2.5 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all border border-gray-800/50 group"
+              className="relative flex items-center gap-2 rounded-lg border border-gray-800/70 bg-gray-900/80 px-2.5 py-1.5 text-gray-400 transition-all hover:border-gray-700 hover:text-white hover:bg-gray-800 group"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.92 }}
               title={`Theme: ${themes[theme].name} — click to cycle`}
@@ -197,9 +221,9 @@ const Header = () => {
                 initial={{ rotate: -20, opacity: 0, scale: 0.7 }}
                 animate={{ rotate: 0, opacity: 1, scale: 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="text-base leading-none"
+                className="flex items-center justify-center"
               >
-                {themes[theme].emoji}
+                <ThemeGlyph theme={theme} />
               </motion.span>
               <motion.span
                 key={`label-${theme}`}

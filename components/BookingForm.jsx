@@ -11,6 +11,11 @@ import {
   FaCheckCircle, FaMoneyBillWave, FaUser,
 } from 'react-icons/fa';
 import InfoTooltip from './InfoTooltip';
+import {
+  formatBookingTimeLabel,
+  getAllowedStartTimes,
+  normalizeDuration,
+} from '@/lib/bookingSlots';
 
 const BookingForm = ({ courtId, courtName, pricePerHour }) => {
   const { data: session } = useSession();
@@ -29,6 +34,17 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
   const [guestReserveLoading, setGuestReserveLoading] = useState(false);
 
   const totalPrice = pricePerHour * Number(duration);
+  const slotOptions = getAllowedStartTimes(duration);
+
+  const handleDurationChange = (nextDuration) => {
+    const safeDuration = String(normalizeDuration(nextDuration));
+    setDuration(safeDuration);
+
+    const nextOptions = getAllowedStartTimes(safeDuration);
+    if (!nextOptions.some((option) => option.value === startTime)) {
+      setStartTime(nextOptions[0]?.value || '');
+    }
+  };
 
   const validateForm = () => {
     if (!date || !startTime || !duration) {
@@ -109,7 +125,7 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
             Court Reserved!
           </h2>
           <p className="text-green-400 text-sm mt-1 font-semibold">
-            {courtName} · {date} at {startTime} · {duration}h
+            {courtName} · {date} at {formatBookingTimeLabel(startTime)} · {duration}h
           </p>
         </div>
 
@@ -289,11 +305,18 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
           </div>
           <div>
             <label htmlFor="start_time" className={labelClass}><FaClock className="inline mr-1.5 mb-0.5" />Start Time <InfoTooltip text="Courts are open 10:00 AM – 10:00 PM. Book at least 1 day in advance." position="top" /></label>
-            <input type="time" id="start_time" value={startTime} onChange={(e) => setStartTime(e.target.value)} min="10:00" max="22:00" className={inputClass} required />
+            <select id="start_time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass} required>
+              <option value="">Select an hourly slot</option>
+              {slotOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label htmlFor="duration" className={labelClass}>Duration <InfoTooltip text="Minimum 1 hour, maximum 3 hours per booking." position="top" /></label>
-            <select id="duration" value={duration} onChange={(e) => setDuration(e.target.value)} className={inputClass} required>
+            <select id="duration" value={duration} onChange={(e) => handleDurationChange(e.target.value)} className={inputClass} required>
               <option value="1">1 hour</option>
               <option value="2">2 hours</option>
               <option value="3">3 hours</option>
@@ -304,7 +327,7 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
         {date && startTime && (
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-green-900/20 border border-green-800/40 rounded-xl text-sm text-green-300">
             <span className="font-bold text-white">Total: R{totalPrice}</span>
-            <span className="text-green-500 ml-2">({duration} hr × R{pricePerHour}/hr) — pay cash at venue</span>
+            <span className="text-green-500 ml-2">({formatBookingTimeLabel(startTime)} · {duration} hr × R{pricePerHour}/hr) — pay cash at venue</span>
           </motion.div>
         )}
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = '5s-arena-v2';
+const CACHE_NAME = '5s-arena-v3';
 const STATIC_ASSETS = [
   '/',
   '/images/logo.png',

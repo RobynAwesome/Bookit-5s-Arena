@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FaArrowLeft } from 'react-icons/fa';
+import {
+  formatBookingTimeLabel,
+  getAllowedStartTimes,
+  normalizeDuration,
+} from '@/lib/bookingSlots';
 
 const EditBookingPage = () => {
   const { id } = useParams();
@@ -15,6 +20,7 @@ const EditBookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const slotOptions = getAllowedStartTimes(duration);
 
   useEffect(() => {
     fetch(`/api/bookings/${id}`)
@@ -23,10 +29,20 @@ const EditBookingPage = () => {
         setBooking(data);
         setDate(data.date);
         setStartTime(data.start_time);
-        setDuration(data.duration);
+        setDuration(normalizeDuration(data.duration));
         setLoading(false);
       });
   }, [id]);
+
+  const handleDurationChange = (nextDuration) => {
+    const safeDuration = normalizeDuration(nextDuration);
+    setDuration(safeDuration);
+
+    const nextOptions = getAllowedStartTimes(safeDuration);
+    if (!nextOptions.some((option) => option.value === startTime)) {
+      setStartTime(nextOptions[0]?.value || '');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,33 +94,41 @@ const EditBookingPage = () => {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">Start Time</label>
-            <input
-              type="time"
+            <select
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
               required
               className="border rounded-md px-3 py-2 text-sm text-gray-700"
-            />
+            >
+              <option value="">Select an hourly slot</option>
+              {slotOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">Duration</label>
             <select
               value={duration}
-              onChange={(e) => setDuration(e.target.value)}
+              onChange={(e) => handleDurationChange(e.target.value)}
               className="border rounded-md px-3 py-2 text-sm text-gray-700"
             >
-              {[1, 2, 3, 4].map((h) => (
+              {[1, 2, 3].map((h) => (
                 <option key={h} value={h}>{h} hour{h > 1 ? 's' : ''}</option>
               ))}
             </select>
           </div>
         </div>
 
+        {startTime && <p className="text-xs text-gray-500">Selected slot: <span className="font-semibold text-gray-700">{formatBookingTimeLabel(startTime)}</span></p>}
+
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <p className="text-xs text-gray-400">
           Note: Bookings cannot be edited within 8 hours of the scheduled start time.
-          Operating hours are 10:00 – 22:00.
+          Operating hours are 10:00 AM – 10:00 PM and bookings start on the hour.
         </p>
 
         <button

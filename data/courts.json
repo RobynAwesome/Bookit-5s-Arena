@@ -8,7 +8,7 @@
     "location": "Hellenic Football Club, Pringle Rd, Milnerton",
     "address": "Pringle Rd, Milnerton, Cape Town, 7441, South Africa",
     "amenities": "Floodlights, Clubhouse access, Change rooms, Wi-Fi, Secure Parking and a Bar",
-    "availability": "10:00 AM - 22:00 PM",
+    "availability": "10:00 AM - 10:00 PM",
     "price_per_hour": 400,
     "image": "court-1.jpg"
   },
@@ -21,7 +21,7 @@
     "location": "Hellenic Football Club, Pringle Rd, Milnerton",
     "address": "Pringle Rd, Milnerton, Cape Town, 7441, South Africa",
     "amenities": "Floodlights, Clubhouse Restaurant, Kids Party Packages, Secure Parking and a Bar",
-    "availability": "10:00 AM - 22:00 PM",
+    "availability": "10:00 AM - 10:00 PM",
     "price_per_hour": 400,
     "image": "court-2.jpg"
   },
@@ -34,7 +34,7 @@
     "location": "Hellenic Football Club, Pringle Rd, Milnerton",
     "address": "Pringle Rd, Milnerton, Cape Town, 7441, South Africa",
     "amenities": "Floodlights, Coaching Support, Whiteboard, Secure Parking and a Bar",
-    "availability": "10:00 AM - 22:00 PM",
+    "availability": "10:00 AM - 10:00 PM",
     "price_per_hour": 400,
     "image": "court-3.jpg"
   },
@@ -47,7 +47,7 @@
     "location": "Hellenic Football Club, Pringle Rd, Milnerton",
     "address": "Pringle Rd, Milnerton, Cape Town, 7441, South Africa",
     "amenities": "Floodlights, Sound System, Clubhouse Restaurant, Secure Parking and a Bar",
-    "availability": "10:00 AM - 22:00 PM",
+    "availability": "10:00 AM - 10:00 PM",
     "price_per_hour": 400,
     "image": "court-4.jpg"
   }

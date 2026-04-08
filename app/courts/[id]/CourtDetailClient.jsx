@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaInfoCircle, FaCalendarAlt, FaStar, FaClock, FaMapMarkerAlt, FaFutbol } from 'react-icons/fa';
 import BookingForm from '@/components/BookingForm';
 import InfoTooltip from '@/components/InfoTooltip';
+import { normalizeAvailabilityLabel } from '@/lib/bookingSlots';
 
 const infoCardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -30,7 +31,7 @@ export default function CourtDetailClient({ court }) {
           style={{
             backgroundImage: `url(/images/courts/${court.image})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: 'center 42%',
             height: 'clamp(280px, 38vw, 360px)',
             willChange: 'transform',
           }}
@@ -137,7 +138,7 @@ export default function CourtDetailClient({ court }) {
                       size={12}
                     />
                   </p>
-                  <p className="text-white text-sm font-medium">{court.availability}</p>
+                  <p className="text-white text-sm font-medium">{normalizeAvailabilityLabel(court.availability)}</p>
                 </div>
               </motion.div>
 

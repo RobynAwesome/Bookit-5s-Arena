@@ -7,6 +7,7 @@ import Court from '@/models/Court';
 import { sendBookingConfirmation } from '@/lib/sendBookingConfirmation';
 import { rateLimit } from '@/lib/rateLimit';
 import { verifyBotRequest } from '@/lib/security/botid';
+import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
 
 // GET /api/bookings — get all bookings for the logged-in user
 export async function GET() {
@@ -100,9 +101,11 @@ export async function POST(request) {
     const OPEN_MINUTES = 10 * 60;   // 10:00
     const CLOSE_MINUTES = 22 * 60;  // 22:00
 
-    const timeRegex = /^\d{2}:\d{2}$/;
-    if (!timeRegex.test(start_time)) {
-      return NextResponse.json({ error: 'Invalid start time format' }, { status: 400 });
+    if (!isAllowedBookingStartTime(start_time, duration)) {
+      return NextResponse.json(
+        { error: 'Start time must be on the hour and the booking must finish by 22:00.' },
+        { status: 400 }
+      );
     }
 
     const newStart = toMinutes(start_time);

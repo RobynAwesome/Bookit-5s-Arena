@@ -6,6 +6,7 @@ import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import '@/models/Court';
 import { sendBookingConfirmation } from '@/lib/sendBookingConfirmation';
+import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
 
 // GET /api/bookings/:id — fetch a single booking (owner or admin)
 export async function GET(request, { params }) {
@@ -88,9 +89,11 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
     }
 
-    // Validate start_time format (HH:MM)
-    if (!/^\d{2}:\d{2}$/.test(start_time)) {
-      return NextResponse.json({ error: 'Invalid start time format' }, { status: 400 });
+    if (!isAllowedBookingStartTime(start_time, duration)) {
+      return NextResponse.json(
+        { error: 'Start time must be on the hour and the booking must finish by 22:00' },
+        { status: 400 }
+      );
     }
 
     // Validate duration is an integer in allowed range

@@ -20,11 +20,16 @@
 - [x] create Session 3 coordination notes in `STRUCTURE`
 - [x] mirror Session 3 coordination notes into external `Schematics`
 - [x] verify the current combined working tree still completes `npm run build`
+- [x] create 4-tier Obsidian audit schema and per-tier interface audit notes
+- [x] regenerate the four court image assets with original non-infringing artwork
+- [x] convert booking flow to hourly slot selection with backend validation
+- [x] run targeted eslint cleanly on the booking/court change set
 - [ ] keep ownership lanes current while parallel work is active
 - [ ] update this board after each safe session checkpoint
 
 Next:
 - keep docs and handoff lane isolated
+- visually QA the new court imagery and hourly booking flow on real mobile breakpoints
 - wait for overlapping code lane to settle before touching reward/referral code
 - verify reward-system completion after conflict risk is gone
 
@@ -33,6 +38,7 @@ Next:
 - [ ] finish current overlapping edits already present in git status
 - [ ] publish a short handoff note for changed files and intended next actions
 - [x] confirm current lane is mainly site-url/env normalization and nav/search cleanup
+- [x] confirm parallel lane did not touch untracked Session 3 docs or `lib/bookingSlots.js`
 - [ ] confirm whether any deeper reward/referral changes are intended beyond share URL normalization
 
 Known active file set:
@@ -90,12 +96,16 @@ Next:
 ### `AMBER` QA / Product Safety
 
 - [x] confirm current working tree is buildable with active parallel lane
+- [x] confirm lint currently passes with warnings only and no hard errors in the parallel report
+- [x] confirm the booking/court change set passes targeted eslint with no warnings
 - [ ] reduce existing lint warning backlog now that `next build` is linting again
 - [ ] full authenticated manager mutation sweep
 - [ ] full authenticated admin mutation sweep
 - [ ] confirm popup preference toggle fix end-to-end
 - [ ] confirm mobile dimensions and macOS menu fixes on real breakpoints
 - [ ] confirm local fixtures redesign parity against live fixtures standard
+- [ ] visually approve the regenerated court imagery on live court pages
+- [ ] verify service worker cache rollover serves the new court assets on real devices
 
 ### `BLUE` Documentation / Handoff
 
@@ -112,6 +122,8 @@ Next:
 - [x] reward-system state audited at code level
 - [x] master board created
 - [x] current working tree build verified
+- [x] 4-tier audit pack added
+- [x] court media refresh and hourly booking pass implemented
 - [ ] ownership board reconciled with Codex App output
 - [ ] reward lane resumed safely
 - [ ] merge/review checkpoint logged

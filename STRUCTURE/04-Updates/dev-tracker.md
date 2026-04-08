@@ -2,6 +2,7 @@
 
 ## Recent Commits
 
+- `d85da42` `record-session-3-build-checkpoint`
 - `9249309` `clarify-session-3-parallel-ownership`
 - `7be1c95` `refine-session-3-reward-handoff`
 - `0f1d03f` `add-session-3-reward-qa-checklist`
@@ -29,6 +30,11 @@
 - `next build` is linting again because the parallel lane restored the normal build script
 - build currently passes with a sizable warning backlog, not hard lint errors
 - data access during build still surfaces the known Atlas allowlist blocker, but the site falls back instead of failing the build
+- parallel Codex report confirms `npm run lint` passes with `73 warnings` and `0 errors`
+- parallel Codex report confirms `npm run build` passes and did not touch untracked Session 3 docs or `lib/bookingSlots.js`
+- booking/court lane targeted eslint now passes with `0` warnings and `0` errors
+- court media files were regenerated at `2026-04-08 18:41` and service-worker cache version was bumped
+- hourly booking selection is now enforced in UI and booking APIs for create, guest reserve, and edit flows
 
 ## Local Dev Notes
 

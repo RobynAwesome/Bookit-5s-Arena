@@ -5,6 +5,7 @@ import Booking from '@/models/Booking';
 import Court from '@/models/Court';
 import { rateLimit } from '@/lib/rateLimit';
 import { verifyBotRequest } from '@/lib/security/botid';
+import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
 
 const toMinutes = (t) => {
   const [h, m] = t.split(':').map(Number);
@@ -50,9 +51,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Bookings cannot be in the past.' }, { status: 400 });
     }
 
-    // Validate start_time format (HH:MM)
-    if (!/^\d{2}:\d{2}$/.test(start_time)) {
-      return NextResponse.json({ error: 'Invalid start time format.' }, { status: 400 });
+    if (!isAllowedBookingStartTime(start_time, duration)) {
+      return NextResponse.json(
+        { error: 'Start time must be on the hour and the booking must finish by 22:00.' },
+        { status: 400 }
+      );
     }
 
     // Validate duration is an integer in allowed range

@@ -25,6 +25,17 @@
 
 - Parallel edits are already present in live app/config files.
 - Session 3 is focused on coordination, clean handoff visibility, reward-system status, and preventing cross-interference.
+- Parallel Codex has explicitly confirmed it stayed out of the untracked Session 3 docs and `lib/bookingSlots.js` lane.
+
+## Newest Session 3 Checkpoint
+
+- 4-tier Obsidian audit schema created.
+- Guest, User, Manager, and Admin interface audit notes created.
+- Four original court images regenerated on the live court filenames.
+- Booking flow changed to hourly slot selection with AM/PM labels and backend validation.
+- Service worker cache version bumped so refreshed court media can replace stale cached court photos.
+- Targeted eslint for the booking/court lane passes with `0` errors and `0` warnings.
+- Full `npm run build` passes; Atlas allowlist warning remains external and non-fatal.
 
 ## Open These Next
 
@@ -32,3 +43,7 @@
 2. `STRUCTURE/04-Updates/Collaboration Split - Session 3.md`
 3. `STRUCTURE/04-Updates/Reward System Status - Session 3.md`
 4. `STRUCTURE/06-Reference/Open Issues.md`
+5. `STRUCTURE/06-Reference/Guest Interface Audit - Session 3.md`
+6. `STRUCTURE/06-Reference/User Interface Audit - Session 3.md`
+7. `STRUCTURE/06-Reference/Manager Interface Audit - Session 3.md`
+8. `STRUCTURE/06-Reference/Admin Interface Audit - Session 3.md`

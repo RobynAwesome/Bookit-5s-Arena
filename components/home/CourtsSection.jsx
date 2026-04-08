@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { useCallback, useRef, useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { FaFutbol, FaArrowRight, FaChevronLeft, FaChevronRight, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
+import { normalizeAvailabilityLabel } from '@/lib/bookingSlots';
 
 // ─── Court Card ──────────────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ function CourtCard({ court, index }) {
               </span>
             )}
             <span className="flex items-center gap-1">
-              <FaClock className="text-green-500/70" size={10} /> {court.availability || '10:00 – 21:00'}
+              <FaClock className="text-green-500/70" size={10} /> {normalizeAvailabilityLabel(court.availability)}
             </span>
           </div>
 
@@ -184,11 +185,11 @@ export default function CourtsSection({ courts = [] }) {
     e.preventDefault();
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (!isDragging || !scrollRef.current) return;
     const dx = e.clientX - dragStartX.current;
     scrollRef.current.scrollLeft = scrollStartX.current - dx;
-  };
+  }, [isDragging]);
 
   const handleMouseUp = () => setIsDragging(false);
 
@@ -201,7 +202,7 @@ export default function CourtsSection({ courts = [] }) {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [handleMouseMove, isDragging]);
 
   const scrollTo = (dir) => {
     scrollRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });

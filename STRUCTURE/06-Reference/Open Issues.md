@@ -3,17 +3,18 @@
 ## Confirmed Or Likely Follow-up Items
 
 - homepage `/` can intermittently hit a Next dev client-manifest error on first compile
-- local MongoDB Atlas SRV DNS can still fail on some networks; set `MONGODB_DIRECT_URI` locally when `MONGODB_URI` uses `mongodb+srv`
+- local MongoDB now auto-falls back from Atlas SRV to a derived direct connection path; `MONGODB_DIRECT_URI` remains optional if you want to pin a manual direct URI
+- MongoDB local access is now past SRV resolution, but Atlas is rejecting this machine at the network layer; add the current IP to the Atlas allowlist before running authenticated local QA
 - home page and `/api/courts` now fall back to seeded court data when MongoDB is unavailable, but the connection warning will still appear in local logs
 - newsletter popup subscribe now succeeds with a local JSON fallback when MongoDB is unavailable; admin newsletter campaigns still require DB-backed auth and newsletter records
 - `/bookings/success` redirects guests and should be reviewed against the intended product behavior
-- WhatsApp OSINT route is implemented but inactive until a dedicated RapidAPI key is configured
-- Google Search74 wiring exists but remains inactive until its key is configured in the active env
+- WhatsApp OSINT env lookup is wired, but the current RapidAPI account returns `403` and is not subscribed to the WhatsApp OSINT API
+- Google Search74 env lookup is wired, but the current RapidAPI account returns `403` for Google Search74 and needs an active subscription/key with access
 
 ## Operational Gaps
 
-- no full authenticated manager QA pass was completed in this cycle because local sign-in still depends on a working MongoDB connection
-- no full authenticated admin mutation sweep was completed in this cycle because local sign-in still depends on a working MongoDB connection
+- no full authenticated manager QA pass was completed in this cycle because local sign-in is still blocked by Atlas IP allowlisting for this machine
+- no full authenticated admin mutation sweep was completed in this cycle because local sign-in is still blocked by Atlas IP allowlisting for this machine
 - some dynamic routes requiring seeded IDs were not smoke-tested end to end
 
 ## Resolved In Follow-up

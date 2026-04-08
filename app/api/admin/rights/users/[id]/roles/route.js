@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/getSession';
-import { isSuperAdmin, SUPER_ADMIN_EMAIL } from '@/lib/roles';
+import { isSuperAdmin } from '@/lib/accessControl';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
@@ -29,7 +29,7 @@ export async function PATCH(request, { params }) {
     if (!target) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
 
     // Prevent granting all 3 roles to anyone except the super admin
-    if (target.email !== SUPER_ADMIN_EMAIL && roles.length === 3) {
+    if (!isSuperAdmin(target.email) && roles.length === 3) {
       return NextResponse.json(
         { error: 'Only the super admin can hold all 3 roles.' },
         { status: 403 }
@@ -37,7 +37,7 @@ export async function PATCH(request, { params }) {
     }
 
     // Cannot modify the super admin's roles
-    if (target.email === SUPER_ADMIN_EMAIL) {
+    if (isSuperAdmin(target.email)) {
       return NextResponse.json(
         { error: 'Super admin roles cannot be modified.' },
         { status: 403 }

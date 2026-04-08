@@ -921,10 +921,10 @@ export default function PremierLeagueFixturesHub() {
                     {meta?.provider?.name || "Provider pending"}
                   </div>
                 <Link
-                  href={meta?.arenaLink?.href || "/fixtures/arena"}
+                  href={meta?.arenaLink?.href || "/fixtures"}
                   className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-violet-900 transition hover:bg-violet-50"
                 >
-                  {meta?.arenaLink?.label || "Arena Fixtures"}
+                  {meta?.arenaLink?.label || "Main Fixtures Board"}
                   <FaArrowRight size={12} />
                 </Link>
               </div>
@@ -1000,9 +1000,11 @@ export default function PremierLeagueFixturesHub() {
                     <FaClock size={12} />
                     <ProviderBadge provider={matchesPayload?.provider} fallbackLabel="Match data" />
                     <span>
-                      {matchesPayload?.provider?.name === "iSports"
-                        ? "Live data from iSports"
-                        : "FPL-backed fallback while iSports league mapping is unavailable"}
+                      {matchesPayload?.provider?.status === "ok"
+                        ? "Current season schedule with live iSports overlays"
+                        : matchesPayload?.provider?.status === "fallback"
+                          ? "Current season schedule powered by FPL while iSports live coverage is unavailable"
+                          : "Provider window not published yet"}
                     </span>
                   </div>
                 </div>
@@ -1355,10 +1357,10 @@ export default function PremierLeagueFixturesHub() {
               Phase 1 check
             </p>
             <h3 className="mt-2 text-2xl font-black text-zinc-950">
-              Premier League-first fixtures are now the default
+              Dedicated Premier League route kept launch-safe
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-              The old mixed arena/world view has been preserved under a separate route, while the new shell puts Premier League schedule cards, official club badges, season switching, and provider-aware fallbacks at the front.
+              The main fixtures route now leads with the broader multi-league board, while this page stays available as a dedicated Premier League hub with the same schedule, standings, stats, and provider-aware fallbacks.
             </p>
           </div>
 
@@ -1367,13 +1369,13 @@ export default function PremierLeagueFixturesHub() {
               Shortcut
             </p>
             <Link
-              href="/fixtures/arena"
+              href="/fixtures"
               className="mt-3 flex items-center justify-between gap-4 rounded-[22px] bg-white/10 px-4 py-4 transition hover:bg-white/15"
             >
               <div>
-                <div className="text-lg font-black">Open Arena Fixtures</div>
+                <div className="text-lg font-black">Open Main Fixtures Board</div>
                 <div className="text-sm text-zinc-300">
-                  Keep using the legacy local competition board while EPL tabs roll out.
+                  Jump back to the live top-25 league board and local arena fixtures.
                 </div>
               </div>
               <FaChevronRight className="shrink-0 text-zinc-300" />

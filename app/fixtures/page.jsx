@@ -1,5 +1,5 @@
-import PremierLeagueFixturesHub from "@/components/fixtures/PremierLeagueFixturesHub";
+import ArenaFixturesExperience from "@/components/fixtures/ArenaFixturesExperience";
 
 export default function FixturesPage() {
-  return <PremierLeagueFixturesHub />;
+  return <ArenaFixturesExperience defaultTab="world" />;
 }

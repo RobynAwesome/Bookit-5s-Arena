@@ -20,6 +20,14 @@ const STATUS_STYLES = {
   sent:      { bg: 'bg-green-900/50',text: 'text-green-400',  label: 'Sent'      },
 };
 
+const SOURCE_STYLES = {
+  'user-account': 'bg-green-900/40 text-green-300',
+  popup: 'bg-blue-900/40 text-blue-300',
+  profile: 'bg-purple-900/40 text-purple-300',
+  admin: 'bg-amber-900/40 text-amber-300',
+  import: 'bg-zinc-800 text-zinc-300',
+};
+
 function StatusBadge({ status }) {
   const s = STATUS_STYLES[status] || STATUS_STYLES.draft;
   return (
@@ -84,9 +92,9 @@ function SubscribersTab({ data, loading }) {
 
   const downloadCsv = () => {
     if (!data?.subscribers) return;
-    const header = 'Name,Email,Username,Joined';
+    const header = 'Name,Email,Username,Source,Joined';
     const rows = data.subscribers.map(
-      (s) => `"${s.name}","${s.email}","${s.username || ''}","${new Date(s.joinedAt).toLocaleDateString('en-ZA')}"`
+      (s) => `"${s.name}","${s.email}","${s.username || ''}","${s.source || ''}","${new Date(s.joinedAt).toLocaleDateString('en-ZA')}"`
     );
     const csv = [header, ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -155,6 +163,7 @@ function SubscribersTab({ data, loading }) {
                   <th className="px-5 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Name</th>
                   <th className="px-5 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Email</th>
                   <th className="px-5 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Username</th>
+                  <th className="px-5 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Source</th>
                   <th className="px-5 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Joined</th>
                 </tr>
               </thead>
@@ -179,6 +188,11 @@ function SubscribersTab({ data, loading }) {
                         <span className="text-gray-700 text-xs">—</span>
                       )}
                     </td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-block rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${SOURCE_STYLES[sub.source] || SOURCE_STYLES.import}`}>
+                        {sub.source || 'unknown'}
+                      </span>
+                    </td>
                     <td className="px-5 py-4 text-gray-500 text-xs">
                       {new Date(sub.joinedAt).toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
@@ -190,7 +204,7 @@ function SubscribersTab({ data, loading }) {
         )}
       </div>
       <p className="text-center text-gray-700 text-xs">
-        Customers toggle newsletter opt-in from their{' '}
+        Customers can subscribe from the popup or toggle newsletter opt-in from their{' '}
         <a href="/profile" className="text-green-600 hover:text-green-500">Profile page</a>. Unsubscribes are immediate.
       </p>
     </div>
@@ -476,11 +490,10 @@ function ComposeTab({ editingId, onSaved }) {
 // ─── Campaigns Tab ────────────────────────────────────────────────────────────
 
 function CampaignsTab({ newsletters, loading, onEdit, onRefresh }) {
-  const [previewId, setPreviewId] = useState(null);
   const [previewNL, setPreviewNL] = useState(null);
 
-  const openPreview = (nl) => { setPreviewNL(nl); setPreviewId(nl._id); };
-  const closePreview = () => { setPreviewId(null); setPreviewNL(null); };
+  const openPreview = (nl) => { setPreviewNL(nl); };
+  const closePreview = () => { setPreviewNL(null); };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this newsletter?')) return;
@@ -845,7 +858,7 @@ export default function NewsletterPage() {
     fetchNewsletters();
   };
 
-  const handleComposeFromCalendar = (day, month, year) => {
+  const handleComposeFromCalendar = () => {
     setEditingId(null);
     setActiveTab('compose');
     // Could pre-fill scheduled date but keep simple for now

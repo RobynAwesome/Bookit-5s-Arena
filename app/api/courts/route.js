@@ -3,14 +3,15 @@ import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/getSession';
 import { requireRole } from '@/lib/roles';
 import connectDB from '@/lib/mongodb';
+import { getFallbackCourts } from '@/lib/localData/courts';
 import Court from '@/models/Court';
 
 // GET /api/courts — fetch all courts (public) or own courts (?mine=true)
 export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const mine = searchParams.get('mine') === 'true';
+  const { searchParams } = new URL(request.url);
+  const mine = searchParams.get('mine') === 'true';
 
+  try {
     let filter = {};
 
     if (mine) {
@@ -38,6 +39,9 @@ export async function GET(request) {
     return res;
   } catch (error) {
     console.error('GET /api/courts error:', error);
+    if (!mine) {
+      return NextResponse.json(getFallbackCourts(), { status: 200 });
+    }
     return NextResponse.json({ error: 'Failed to fetch courts' }, { status: 500 });
   }
 }

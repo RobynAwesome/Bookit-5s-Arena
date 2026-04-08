@@ -13,6 +13,7 @@ import TournamentShowcase from '@/components/home/TournamentShowcase';
 import ContactSection   from '@/components/home/ContactSection';
 import WelcomePopup     from '@/components/home/WelcomePopup';
 import connectDB        from '@/lib/mongodb';
+import { getFallbackCourts } from '@/lib/localData/courts';
 import Court            from '@/models/Court';
 
 export const revalidate = 60; // ISR — revalidate every 60 seconds
@@ -31,7 +32,7 @@ const getCourts = async () => {
     }));
   } catch (err) {
     console.error('Failed to get courts:', err);
-    return [];
+    return getFallbackCourts();
   }
 };
 

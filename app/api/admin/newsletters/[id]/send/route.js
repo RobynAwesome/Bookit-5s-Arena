@@ -5,7 +5,9 @@ import { requireRole } from '@/lib/roles';
 import dbConnect from '@/lib/mongodb';
 import Newsletter from '@/models/Newsletter';
 import User from '@/models/User';
+import NewsletterSubscriber from '@/models/NewsletterSubscriber';
 import nodemailer from 'nodemailer';
+import { readLocalNewsletterSubscribers } from '@/lib/newsletterSubscribersStore';
 
 // Lazy-load so missing env vars don't crash cold-start
 const getTransporter = () =>
@@ -87,8 +89,39 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Newsletter has already been sent' }, { status: 400 });
     }
 
-    // Get all opted-in subscribers
-    const subscribers = await User.find({ newsletterOptIn: true }).select('email name').lean();
+    const [userSubscribers, guestSubscribers, localSubscribers] = await Promise.all([
+      User.find({ newsletterOptIn: true }).select('email name').lean(),
+      NewsletterSubscriber.find({}).select('email').lean(),
+      readLocalNewsletterSubscribers(),
+    ]);
+
+    const deduped = new Map();
+    for (const subscriber of userSubscribers) {
+      deduped.set(String(subscriber.email).toLowerCase(), {
+        email: subscriber.email,
+        name: subscriber.name || '5S Arena Supporter',
+      });
+    }
+    for (const subscriber of guestSubscribers) {
+      const key = String(subscriber.email).toLowerCase();
+      if (!deduped.has(key)) {
+        deduped.set(key, {
+          email: subscriber.email,
+          name: '5S Arena Supporter',
+        });
+      }
+    }
+    for (const subscriber of localSubscribers) {
+      const key = String(subscriber.email).toLowerCase();
+      if (!deduped.has(key)) {
+        deduped.set(key, {
+          email: subscriber.email,
+          name: '5S Arena Supporter',
+        });
+      }
+    }
+
+    const subscribers = [...deduped.values()];
 
     if (!subscribers.length) {
       return NextResponse.json({ error: 'No subscribers to send to' }, { status: 400 });

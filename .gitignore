@@ -48,3 +48,4 @@ stripe.exe
 .next-dev*.log
 
 .env*.local
+data/newsletter-subscribers.local.json

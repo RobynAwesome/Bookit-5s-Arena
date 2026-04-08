@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -22,11 +23,13 @@ import {
   FaGift,
   FaBirthdayCake,
 } from "react-icons/fa";
-import dynamic from "next/dynamic";
-
-const ScavengerLogo = dynamic(() => import("@/components/ScavengerLogo"), { ssr: false });
 import { motion, AnimatePresence } from "framer-motion";
 import InfoTooltip from "@/components/InfoTooltip";
+import {
+  readPopupPreferenceState,
+  setNewsletterPopupEnabled,
+  setWelcomePopupEnabled,
+} from "@/lib/popupPreferences";
 
 /* ─── Accordion section component ─── */
 const AccordionSection = ({
@@ -130,10 +133,15 @@ const ProfilePage = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [popupPreferences, setPopupPreferences] = useState({
+    welcomeEnabled: true,
+    newsletterEnabled: true,
+  });
 
   // Which accordion sections are open — all start collapsed; user clicks to expand
   const [openSections, setOpenSections] = useState({
     profile: false,
+    status: false,
     birthday: false,
     security: false,
     comms: false,
@@ -190,6 +198,14 @@ const ProfilePage = () => {
     if (status === "authenticated") loadProfile();
   }, [status]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    setPopupPreferences(readPopupPreferenceState(window.localStorage));
+  }, []);
+
   // Avatar upload
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
@@ -238,7 +254,7 @@ const ProfilePage = () => {
       const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`;
       window.open(authUrl, "onedrive-oauth", "width=500,height=700");
       setSuccess("OneDrive OAuth popup opened. Complete authentication to continue.");
-    } catch (err) {
+    } catch {
       setError("Failed to open OneDrive OAuth popup.");
     } finally {
       setUploadLoading(false);
@@ -256,7 +272,7 @@ const ProfilePage = () => {
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&access_type=offline&prompt=consent`;
       window.open(authUrl, "googledrive-oauth", "width=500,height=700");
       setSuccess("Google Drive OAuth popup opened. Complete authentication to continue.");
-    } catch (err) {
+    } catch {
       setError("Failed to open Google Drive OAuth popup.");
     } finally {
       setUploadLoading(false);
@@ -318,6 +334,46 @@ const ProfilePage = () => {
     }
   };
 
+  const syncPopupPreferences = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    setPopupPreferences(readPopupPreferenceState(window.localStorage));
+  };
+
+  const updatePopupPreference = (type, enabled) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (type === "welcome") {
+      setWelcomePopupEnabled(enabled, window.localStorage);
+    } else {
+      setNewsletterPopupEnabled(enabled, window.localStorage);
+    }
+
+    syncPopupPreferences();
+    setSuccess(
+      enabled
+        ? "Popup prompts have been turned back on for this device."
+        : "Popup prompt updated for this device.",
+    );
+    setTimeout(() => setSuccess(""), 3000);
+  };
+
+  const resetAllPopups = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    setWelcomePopupEnabled(true, window.localStorage);
+    setNewsletterPopupEnabled(true, window.localStorage);
+    syncPopupPreferences();
+    setSuccess("Welcome and newsletter pop-ups have been re-enabled on this device.");
+    setTimeout(() => setSuccess(""), 3000);
+  };
+
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -358,11 +414,13 @@ const ProfilePage = () => {
                   title="Change profile photo"
                 >
                   {displayAvatar ? (
-                    <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
-                      <img
+                    <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                      <Image
                         src={displayAvatar}
                         alt="Profile"
-                        className="w-full h-full object-cover"
+                        fill
+                        unoptimized
+                        className="object-cover"
                       />
                     </div>
                   ) : (
@@ -1002,6 +1060,80 @@ const ProfilePage = () => {
                     className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-300"
                     style={{ left: newsletterOptIn ? "26px" : "2px" }}
                   />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-700 bg-gray-800/60 p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-white text-sm font-semibold">
+                      Site Pop-up Prompts
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      Manage the welcome and newsletter prompts for this device. If you muted them earlier, you can turn them back on here.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={resetAllPopups}
+                    className="rounded-full border border-green-700/50 bg-green-600/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-green-400 transition hover:bg-green-600/20"
+                  >
+                    Turn All Back On
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {[
+                    {
+                      key: "welcome",
+                      title: "Welcome Popup",
+                      description: popupPreferences.welcomeEnabled
+                        ? "Ready to show again on your next visit."
+                        : "Muted on this device until you re-enable it.",
+                      enabled: popupPreferences.welcomeEnabled,
+                    },
+                    {
+                      key: "newsletter",
+                      title: "Newsletter Popup",
+                      description: popupPreferences.newsletterEnabled
+                        ? "The email prompt can appear again when eligible."
+                        : "Muted on this device until you re-enable it.",
+                      enabled: popupPreferences.newsletterEnabled,
+                    },
+                  ].map((popup) => (
+                    <button
+                      key={popup.key}
+                      type="button"
+                      onClick={() => updatePopupPreference(popup.key, !popup.enabled)}
+                      className={`rounded-2xl border px-4 py-4 text-left transition ${
+                        popup.enabled
+                          ? "border-green-700/50 bg-green-900/20"
+                          : "border-gray-700 bg-gray-900/70 hover:border-gray-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-white">
+                            {popup.title}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {popup.description}
+                          </p>
+                        </div>
+                        <div
+                          className="relative shrink-0 h-6 w-12 rounded-full transition-colors duration-300"
+                          style={{
+                            background: popup.enabled ? "#16a34a" : "#374151",
+                          }}
+                        >
+                          <div
+                            className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all duration-300"
+                            style={{ left: popup.enabled ? "26px" : "2px" }}
+                          />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
             </AccordionSection>

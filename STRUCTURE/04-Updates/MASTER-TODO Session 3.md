@@ -19,6 +19,7 @@
 - [x] inspect reward-system implementation status
 - [x] create Session 3 coordination notes in `STRUCTURE`
 - [x] mirror Session 3 coordination notes into external `Schematics`
+- [x] verify the current combined working tree still completes `npm run build`
 - [ ] keep ownership lanes current while parallel work is active
 - [ ] update this board after each safe session checkpoint
 
@@ -88,6 +89,8 @@ Next:
 
 ### `AMBER` QA / Product Safety
 
+- [x] confirm current working tree is buildable with active parallel lane
+- [ ] reduce existing lint warning backlog now that `next build` is linting again
 - [ ] full authenticated manager mutation sweep
 - [ ] full authenticated admin mutation sweep
 - [ ] confirm popup preference toggle fix end-to-end
@@ -108,6 +111,7 @@ Next:
 - [x] `STRUCTURE` reviewed for current state
 - [x] reward-system state audited at code level
 - [x] master board created
+- [x] current working tree build verified
 - [ ] ownership board reconciled with Codex App output
 - [ ] reward lane resumed safely
 - [ ] merge/review checkpoint logged

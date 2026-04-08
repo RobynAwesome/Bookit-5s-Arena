@@ -261,8 +261,8 @@ const Header = () => {
                     <p className="text-white text-[10px] font-black uppercase tracking-widest">
                       {session.user.name?.split(" ")[0]}
                     </p>
-                    <p className="text-green-500 text-[9px] font-bold uppercase">
-                      {session.user.activeRole || "Player"}
+                    <p className="max-w-[180px] truncate text-gray-500 text-[9px] font-bold">
+                      {session.user.email}
                     </p>
                   </div>
                 </Link>
@@ -405,11 +405,18 @@ const Header = () => {
                         <p className="truncate text-sm font-black uppercase tracking-[0.18em] text-white">
                           {session.user.name || "Player"}
                         </p>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-green-400">
-                          {session.user.activeRole || "Player"}
+                        <p className="truncate text-[10px] font-bold tracking-[0.08em] text-gray-500">
+                          {session.user.email}
                         </p>
                       </div>
                     </Link>
+
+                    <div className="flex items-center justify-between rounded-2xl border border-gray-800 bg-gray-900/80 px-4 py-3">
+                      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-gray-500">
+                        Active Role
+                      </span>
+                      <RoleSwitcher />
+                    </div>
 
                     <button
                       onClick={() => signOut({ callbackUrl: "/" })}

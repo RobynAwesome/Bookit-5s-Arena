@@ -106,12 +106,14 @@ Next:
 - [x] confirm court detail routes can fall back to seeded local court data during Mongo outages
 - [x] confirm the latest safe-lane warning-reduction files pass targeted eslint cleanly
 - [x] confirm the second safe-lane warning batch reduced the combined lint report to `56` warnings
+- [x] restore `/fixtures` as the multi-league launch board and keep Premier League on its own route
 - [ ] reduce existing lint warning backlog now that `next build` is linting again
 - [ ] full authenticated manager mutation sweep
 - [ ] full authenticated admin mutation sweep
 - [ ] confirm popup preference toggle fix end-to-end
 - [ ] confirm mobile dimensions and macOS menu fixes on real breakpoints
 - [ ] confirm local fixtures redesign parity against live fixtures standard
+- [ ] run final live-data QA across `/fixtures`, `/fixtures/arena`, and `/fixtures/premier-league` with iSports, API-Football, and TheSportsDB available
 - [ ] visually approve the regenerated court imagery on live court pages
 - [ ] verify service worker cache rollover serves the new court assets on real devices
 

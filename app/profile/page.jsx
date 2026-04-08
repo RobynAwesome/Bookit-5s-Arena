@@ -185,6 +185,16 @@ const ProfilePage = () => {
 
   // Load profile data
   useEffect(() => {
+    if (status !== "authenticated" || !session?.user) {
+      return;
+    }
+
+    setName((current) => current || session.user.name || "");
+    setEmail((current) => current || session.user.email || "");
+    setAvatarUrl((current) => current || session.user.image || "");
+  }, [status, session]);
+
+  useEffect(() => {
     const loadProfile = async () => {
       const res = await fetch("/api/profile");
       if (res.ok) {

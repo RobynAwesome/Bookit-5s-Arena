@@ -11,6 +11,8 @@ const LEAGUES = [
   { name: 'Bundesliga', code: 'BL' },
   { name: 'PSL', code: 'PSL' },
   { name: 'Champions League', code: 'UCL' },
+  { name: 'MLS', code: 'MLS' },
+  { name: 'Brasileirao', code: 'BRA' },
 ];
 
 export default function FixturesPromo() {
@@ -133,8 +135,8 @@ export default function FixturesPromo() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.35 }}
           >
-            Live scores, breaking news, video highlights & match analysis —
-            all your competitions, all in one place.
+            Live scores, breaking news, video highlights, local arena schedules,
+            and top-25 league coverage with PSL included.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -168,6 +170,24 @@ export default function FixturesPromo() {
             >
               <FaTv size={14} /> Watch Highlights
             </motion.span>
+          </motion.div>
+
+          <motion.div
+            className="mb-10 flex flex-wrap justify-center gap-3"
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.62 }}
+          >
+            <span className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/80">
+              Arena local fixtures redesigned
+            </span>
+            <span className="rounded-full border border-green-500/25 bg-green-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-green-300">
+              Top 25 leagues tracked
+            </span>
+            <span className="rounded-full border border-yellow-500/25 bg-yellow-500/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-yellow-300">
+              PSL always visible
+            </span>
           </motion.div>
 
           {/* League badges */}

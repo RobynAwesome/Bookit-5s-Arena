@@ -1,9 +1,21 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { FaTrophy, FaArrowRight, FaFutbol, FaMapMarkerAlt, FaCalendarAlt, FaUsers } from "react-icons/fa";
+import {
+  FaTrophy,
+  FaArrowRight,
+  FaFutbol,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaUsers,
+  FaChevronLeft,
+  FaChevronRight,
+  FaPause,
+  FaPlay,
+} from "react-icons/fa";
 
 /* World Cup team logos */
 const TEAMS = [
@@ -33,12 +45,42 @@ const TEAMS = [
   { name: "Jordan Pefok", logo: "/images/tournament/worldcup-logos/jordan-pefok-team.jpg" },
 ];
 
-const MARQUEE_TEAMS = [...TEAMS, ...TEAMS];
-
 /* Floating football decorations */
 const BALLS = [0, 1, 2, 3, 4];
 
 export default function TournamentSection() {
+  const [activeTeamIndex, setActiveTeamIndex] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const railRef = useRef(null);
+  const activeTeam = TEAMS[activeTeamIndex];
+
+  useEffect(() => {
+    if (isCarouselPaused) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setActiveTeamIndex((current) => (current + 1) % TEAMS.length);
+    }, 2600);
+
+    return () => window.clearInterval(timer);
+  }, [isCarouselPaused]);
+
+  useEffect(() => {
+    const rail = railRef.current;
+    const activeCard = rail?.querySelector(`[data-team-index="${activeTeamIndex}"]`);
+
+    if (!rail || !activeCard) {
+      return;
+    }
+
+    const cardOffset = activeCard.offsetLeft - rail.clientWidth / 2 + activeCard.clientWidth / 2;
+    rail.scrollTo({
+      left: Math.max(0, cardOffset),
+      behavior: "smooth",
+    });
+  }, [activeTeamIndex]);
+
   return (
     <section className="relative overflow-hidden">
       {/* ── Background ── */}
@@ -205,7 +247,7 @@ export default function TournamentSection() {
           </motion.div>
         </motion.div>
 
-        {/* Team Logos Marquee */}
+        {/* Interactive team rail */}
         <motion.div
           className="relative mb-14"
           initial={{ opacity: 0 }}
@@ -213,37 +255,103 @@ export default function TournamentSection() {
           viewport={{ once: true }}
           transition={{ delay: 0.3, duration: 0.6 }}
         >
-          <div className="absolute inset-y-0 left-0 z-10 w-16 md:w-24 bg-linear-to-r from-gray-950 via-gray-950/70 to-transparent pointer-events-none" />
-          <div className="absolute inset-y-0 right-0 z-10 w-16 md:w-24 bg-linear-to-l from-gray-950 via-gray-950/70 to-transparent pointer-events-none" />
+          <div className="mb-4 flex flex-col gap-3 rounded-[28px] border border-white/10 bg-black/25 p-4 backdrop-blur-sm md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-green-400">
+                Interactive Flag Carousel
+              </p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
+                Tap any nation icon to spotlight it. The carousel now pauses on command so mobile,
+                macOS, and touch users can browse without the rail drifting away.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveTeamIndex((current) => (current - 1 + TEAMS.length) % TEAMS.length)
+                }
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:border-green-400/40 hover:bg-white/10"
+              >
+                <FaChevronLeft size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCarouselPaused((value) => !value)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-green-300 transition hover:bg-green-500/20"
+              >
+                {isCarouselPaused ? <FaPlay size={12} /> : <FaPause size={12} />}
+                {isCarouselPaused ? "Resume Wheel" : "Pause Wheel"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTeamIndex((current) => (current + 1) % TEAMS.length)}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:border-green-400/40 hover:bg-white/10"
+              >
+                <FaChevronRight size={14} />
+              </button>
+            </div>
+          </div>
 
-          <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black/25 backdrop-blur-sm px-3 py-4 md:px-4">
-            <motion.div
-              className="flex w-max gap-3 md:gap-4"
-              animate={{ x: ["0%", "-50%"] }}
-              transition={{ duration: 34, repeat: Infinity, ease: "linear" }}
-            >
-              {MARQUEE_TEAMS.map((team, i) => (
-                <motion.div
-                  key={`${team.name}-${i}`}
-                  className="group relative h-24 w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
-                  whileHover={{
-                    y: -6,
-                    scale: 1.08,
-                    borderColor: "rgba(74,222,128,0.8)",
-                    boxShadow: "0 0 30px rgba(34,197,94,0.35), 0 14px 34px rgba(0,0,0,0.35)",
-                  }}
-                  transition={{ type: "spring", stiffness: 280, damping: 18 }}
+          <div
+            ref={railRef}
+            className="flex snap-x gap-3 overflow-x-auto rounded-[28px] border border-white/10 bg-black/25 px-3 py-4 backdrop-blur-sm md:px-4"
+          >
+            {TEAMS.map((team, index) => (
+              <motion.button
+                key={team.name}
+                type="button"
+                data-team-index={index}
+                onClick={() => {
+                  setActiveTeamIndex(index);
+                  setIsCarouselPaused(true);
+                }}
+                className={`group relative h-24 w-24 shrink-0 snap-center overflow-hidden rounded-2xl border bg-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] transition md:h-28 md:w-28 ${
+                  activeTeamIndex === index
+                    ? "border-green-400 shadow-[0_0_30px_rgba(34,197,94,0.35),0_14px_34px_rgba(0,0,0,0.35)]"
+                    : "border-white/10"
+                }`}
+                whileHover={{
+                  y: -6,
+                  scale: 1.04,
+                }}
+                transition={{ type: "spring", stiffness: 280, damping: 18 }}
+              >
+                <Image src={team.logo} alt={team.name} fill className="object-cover" sizes="112px" />
+                <div
+                  className={`absolute inset-0 bg-linear-to-t from-black/75 via-transparent to-transparent transition-opacity duration-300 ${
+                    activeTeamIndex === index ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  }`}
+                />
+                <div
+                  className={`absolute inset-x-0 bottom-0 p-2 transition-opacity duration-300 ${
+                    activeTeamIndex === index ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  }`}
                 >
-                  <Image src={team.logo} alt={team.name} fill className="object-cover" sizes="112px" />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                  <div className="absolute inset-x-0 bottom-0 p-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <span className="block text-center text-[9px] font-bold uppercase tracking-[0.15em] text-white leading-tight">
-                      {team.name}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                  <span className="block text-center text-[9px] font-bold uppercase tracking-[0.15em] text-white leading-tight">
+                    {team.name}
+                  </span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+
+          <div className="mt-4 rounded-[28px] border border-white/10 bg-black/25 p-4 backdrop-blur-sm md:p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="relative h-28 w-full overflow-hidden rounded-[24px] border border-white/10 bg-white md:h-32 md:w-32">
+                <Image src={activeTeam.logo} alt={activeTeam.name} fill className="object-cover" sizes="128px" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-green-400">
+                  Spotlight
+                </p>
+                <h3 className="mt-2 text-2xl font-black text-white">{activeTeam.name}</h3>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
+                  These icons can now be manually browsed, paused, and inspected instead of only
+                  sliding past as a passive marquee.
+                </p>
+              </div>
+            </div>
           </div>
         </motion.div>
 

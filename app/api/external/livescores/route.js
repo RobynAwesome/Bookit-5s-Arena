@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { fetchISportsLiveScores } from '@/lib/sports/isports';
+import { getLeaguePriority, getTopLeagueMatch } from '@/lib/sports/topLeagues';
 
 const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
 const SPORTSDB_BASE = 'https://www.thesportsdb.com/api/v1/json/3';
@@ -123,6 +124,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
+    const topLeaguesOnly = searchParams.get('topLeaguesOnly') === 'true';
     const cacheKey = `livescores-${date || 'today'}`;
 
     // Return cached data if still fresh
@@ -157,6 +159,48 @@ export async function GET(request) {
         result = await fetchFromSportsDB(date);
       }
     }
+
+    const matches = (result.matches || [])
+      .map((match) => {
+        const preferredLeague = getTopLeagueMatch(
+          match.league?.name,
+          match.league?.country,
+        );
+
+        return {
+          ...match,
+          league: {
+            ...match.league,
+            spotlight: preferredLeague?.name || null,
+          },
+          preferredLeague: preferredLeague?.slug || null,
+          leaguePriority: getLeaguePriority(
+            match.league?.name,
+            match.league?.country,
+          ),
+        };
+      })
+      .filter((match) => !topLeaguesOnly || match.preferredLeague)
+      .sort((a, b) => {
+        if (a.leaguePriority !== b.leaguePriority) {
+          return a.leaguePriority - b.leaguePriority;
+        }
+
+        const aLive = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(a.status?.short);
+        const bLive = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(b.status?.short);
+
+        if (aLive !== bLive) {
+          return aLive ? -1 : 1;
+        }
+
+        return String(a.league?.name || '').localeCompare(String(b.league?.name || ''));
+      });
+
+    result = {
+      ...result,
+      matches,
+      topLeagueCoverage: matches.filter((match) => match.preferredLeague).length,
+    };
 
     // Cache the result
     cache = { data: result, timestamp: Date.now(), key: cacheKey };

@@ -5,18 +5,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  FaBroadcastTower,
   FaFutbol,
   FaTrophy,
   FaCalendarAlt,
+  FaChevronRight,
   FaChevronDown,
   FaChevronUp,
   FaGlobeAfrica,
+  FaLayerGroup,
   FaNewspaper,
   FaPlay,
   FaExternalLinkAlt,
 } from "react-icons/fa";
 import AnimatedTitle from "@/components/AnimatedTitle";
 import useSSE from "@/hooks/useSSE";
+import {
+  TOP_25_LEAGUES,
+  getTopLeagueMatch,
+  sortLeagueEntriesByPriority,
+} from "@/lib/sports/topLeagues";
 
 /* ═══════════════════════════════════════════════════════════════
    CONSTANTS
@@ -53,6 +61,65 @@ const EVENT_ICON = {
   "red-card": "🟥",
   substitution: "🔄",
 };
+
+function isLiveStatusShort(short) {
+  return ["1H", "2H", "HT", "ET", "P", "BT", "LIVE"].includes(short);
+}
+
+function formatArenaDateLabel(value) {
+  if (!value) {
+    return "Schedule To Be Confirmed";
+  }
+
+  return new Date(value).toLocaleDateString("en-ZA", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function groupArenaFixturesByDate(fixtures) {
+  const groups = fixtures.reduce((accumulator, fixture) => {
+    const dateKey = fixture.scheduledAt
+      ? new Date(fixture.scheduledAt).toISOString().split("T")[0]
+      : "tbd";
+
+    if (!accumulator[dateKey]) {
+      accumulator[dateKey] = {
+        key: dateKey,
+        label: formatArenaDateLabel(fixture.scheduledAt),
+        fixtures: [],
+      };
+    }
+
+    accumulator[dateKey].fixtures.push(fixture);
+    return accumulator;
+  }, {});
+
+  return Object.values(groups).sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function ArenaOverviewCard({ icon, label, value, description, accent }) {
+  return (
+    <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-4">
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-11 w-11 items-center justify-center rounded-2xl"
+          style={{ backgroundColor: accent }}
+        >
+          {icon}
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">
+            {label}
+          </p>
+          <p className="text-2xl font-black text-white">{value}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs leading-5 text-gray-500">{description}</p>
+    </div>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════════
    TAB BAR
@@ -696,6 +763,8 @@ export default function FixturesPage() {
   // World scores tab state
   const [globalMatches, setGlobalMatches] = useState([]);
   const [globalLoading, setGlobalLoading] = useState(false);
+  const [worldLeagueFilter, setWorldLeagueFilter] = useState("all");
+  const [showAllWorldLeagues, setShowAllWorldLeagues] = useState(false);
 
   // News tab state
   const [newsArticles, setNewsArticles] = useState([]);
@@ -827,7 +896,7 @@ export default function FixturesPage() {
 
   // ── Build tabs ──
   const liveWorldCount = globalMatches.filter((m) =>
-    ["1H", "2H", "HT", "ET", "P", "BT", "LIVE"].includes(m.status?.short)
+    isLiveStatusShort(m.status?.short)
   ).length;
 
   const tabs = [
@@ -858,12 +927,63 @@ export default function FixturesPage() {
   ];
 
   // ── Group global matches by league ──
-  const groupedGlobal = globalMatches.reduce((acc, m) => {
-    const key = m.league?.name || "Other";
-    if (!acc[key]) acc[key] = { league: m.league, matches: [] };
-    acc[key].matches.push(m);
-    return acc;
-  }, {});
+  const groupedArenaFixtures = groupArenaFixturesByDate(arenaFixtures);
+  const arenaOverview = [
+    {
+      label: "Live Matches",
+      value: meta.live,
+      description: "Real-time local fixtures from tournaments and league play.",
+      accent: "rgba(220, 38, 38, 0.15)",
+      icon: <FaBroadcastTower className="text-red-400" size={16} />,
+    },
+    {
+      label: "Upcoming",
+      value: meta.upcoming,
+      description: "Next kick-offs queued across the Arena schedule.",
+      accent: "rgba(37, 99, 235, 0.15)",
+      icon: <FaCalendarAlt className="text-sky-400" size={16} />,
+    },
+    {
+      label: "Competitions",
+      value: competitionFilter === "all" ? leagues.length || "All" : 1,
+      description: "Filter by tournament, league, or group without leaving the board.",
+      accent: "rgba(34, 197, 94, 0.15)",
+      icon: <FaLayerGroup className="text-green-400" size={16} />,
+    },
+  ];
+
+  const groupedGlobalEntries = sortLeagueEntriesByPriority(
+    Object.entries(
+      globalMatches.reduce((acc, match) => {
+        const key = match.league?.name || "Other";
+        const topLeague = getTopLeagueMatch(match.league?.name, match.league?.country);
+
+        if (!acc[key]) {
+          acc[key] = {
+            league: {
+              ...match.league,
+              spotlight: topLeague?.name || null,
+            },
+            matches: [],
+            preferredLeague: topLeague,
+          };
+        }
+
+        acc[key].matches.push(match);
+        return acc;
+      }, {}),
+    ).map(([, entry]) => entry),
+  );
+
+  const featuredWorldEntries = groupedGlobalEntries.filter((entry) => entry.preferredLeague);
+  const worldEntries = (
+    showAllWorldLeagues || featuredWorldEntries.length === 0
+      ? groupedGlobalEntries
+      : featuredWorldEntries
+  ).filter((entry) => worldLeagueFilter === "all" || entry.preferredLeague?.slug === worldLeagueFilter);
+  const visibleWorldLeagueFilters = TOP_25_LEAGUES.filter((league) =>
+    featuredWorldEntries.some((entry) => entry.preferredLeague?.slug === league.slug),
+  );
 
   // ── Render ──
   return (
@@ -914,32 +1034,94 @@ export default function FixturesPage() {
         {/* ══════════════════════ ARENA TAB ══════════════════════ */}
         {!loading && activeTab === "arena" && (
           <>
-            <FilterBar
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              competitionFilter={competitionFilter}
-              setCompetitionFilter={setCompetitionFilter}
-              groupFilter={groupFilter}
-              setGroupFilter={setGroupFilter}
-              leagues={leagues}
-              meta={meta}
-            />
+            <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+              <div className="rounded-[28px] border border-gray-800 bg-gray-900/80 p-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-green-400">
+                      Local Arena Match Centre
+                    </p>
+                    <h3
+                      className="mt-2 text-3xl font-black uppercase text-white"
+                      style={{ fontFamily: "Impact, Arial Black, sans-serif" }}
+                    >
+                      Built To The Same Live Standard
+                    </h3>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-400">
+                      Local league and tournament fixtures now sit in structured date buckets,
+                      carry live event expansion, and keep the same fast-scan quality as the
+                      global board.
+                    </p>
+                  </div>
+                  <Link
+                    href="/fixtures"
+                    className="inline-flex items-center gap-2 rounded-full border border-green-700/50 bg-green-600/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-green-400 transition hover:bg-green-600/20"
+                  >
+                    Premier League Hub <FaChevronRight size={10} />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-gray-800 bg-gray-900/80 p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-gray-500">
+                  Filters
+                </p>
+                <div className="mt-4">
+                  <FilterBar
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    competitionFilter={competitionFilter}
+                    setCompetitionFilter={setCompetitionFilter}
+                    groupFilter={groupFilter}
+                    setGroupFilter={setGroupFilter}
+                    leagues={leagues}
+                    meta={meta}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              {arenaOverview.map((card) => (
+                <ArenaOverviewCard key={card.label} {...card} />
+              ))}
+            </div>
 
             {arenaFixtures.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-                {arenaFixtures.map((f, i) => (
-                  <FixtureCard
-                    key={f._id}
-                    fixture={f}
-                    index={i}
-                    expanded={expandedFixture === f._id}
-                    onToggle={() =>
-                      setExpandedFixture(
-                        expandedFixture === f._id ? null : f._id
-                      )
-                    }
-                    flash={flashIds.has(f._id)}
-                  />
+              <div className="mt-6 space-y-6">
+                {groupedArenaFixtures.map((group) => (
+                  <section
+                    key={group.key}
+                    className="overflow-hidden rounded-[28px] border border-gray-800 bg-gray-950/70"
+                  >
+                    <div className="border-b border-gray-800 px-5 py-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-green-400">
+                          Arena Date Card
+                        </span>
+                        <h4 className="text-xl font-black text-white">{group.label}</h4>
+                        <span className="rounded-full border border-gray-700 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
+                          {group.fixtures.length} matches
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
+                      {group.fixtures.map((fixture, index) => (
+                        <FixtureCard
+                          key={fixture._id}
+                          fixture={fixture}
+                          index={index}
+                          expanded={expandedFixture === fixture._id}
+                          onToggle={() =>
+                            setExpandedFixture(
+                              expandedFixture === fixture._id ? null : fixture._id,
+                            )
+                          }
+                          flash={flashIds.has(fixture._id)}
+                        />
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             ) : (
@@ -972,15 +1154,75 @@ export default function FixturesPage() {
         {/* ══════════════════════ WORLD TAB ══════════════════════ */}
         {!loading && activeTab === "world" && (
           <>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">
-                Today&apos;s global fixtures · Updates every 60s
-              </span>
-              {globalLoading && (
-                <span className="text-[9px] text-gray-700 animate-pulse">
-                  refreshing…
+            <div className="rounded-[28px] border border-gray-800 bg-gray-900/80 p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-400">
+                    Global Match Radar
+                  </p>
+                  <h3
+                    className="mt-2 text-3xl font-black uppercase text-white"
+                    style={{ fontFamily: "Impact, Arial Black, sans-serif" }}
+                  >
+                    Top 25 Leagues Including PSL
+                  </h3>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-400">
+                    The live board prioritises the top leagues first, keeps PSL in the same
+                    watchlist, and can expand to every other feed returned by the provider.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-gray-700 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">
+                    {featuredWorldEntries.length}/{TOP_25_LEAGUES.length} tracked leagues live
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllWorldLeagues((value) => !value)}
+                    className="rounded-full border border-green-700/50 bg-green-600/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-green-400 transition hover:bg-green-600/20"
+                  >
+                    {showAllWorldLeagues ? "Top 25 Only" : "Show All Feeds"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWorldLeagueFilter("all")}
+                  className={`rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition ${
+                    worldLeagueFilter === "all"
+                      ? "border-green-700/60 bg-green-600/15 text-green-400"
+                      : "border-gray-800 bg-gray-950 text-gray-500 hover:border-gray-700 hover:text-gray-300"
+                  }`}
+                >
+                  All priority leagues
+                </button>
+                {visibleWorldLeagueFilters.map((league) => (
+                  <button
+                    key={league.slug}
+                    type="button"
+                    onClick={() => setWorldLeagueFilter(league.slug)}
+                    className={`rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition ${
+                      worldLeagueFilter === league.slug
+                        ? "border-green-700/60 bg-green-600/15 text-green-400"
+                        : "border-gray-800 bg-gray-950 text-gray-500 hover:border-gray-700 hover:text-gray-300"
+                    }`}
+                  >
+                    {league.name}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 flex items-center gap-2">
+                <span className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">
+                  Live global fixtures · Updates every 60s
                 </span>
-              )}
+                {globalLoading && (
+                  <span className="text-[9px] text-gray-700 animate-pulse">
+                    refreshing…
+                  </span>
+                )}
+              </div>
             </div>
 
             {globalLoading && globalMatches.length === 0 ? (
@@ -992,65 +1234,63 @@ export default function FixturesPage() {
                   />
                 ))}
               </div>
-            ) : globalMatches.length > 0 ? (
+            ) : worldEntries.length > 0 ? (
               <div className="space-y-6">
-                {Object.entries(groupedGlobal)
-                  .sort(([a], [b]) => {
-                    // Sort: live leagues first
-                    const aLive = groupedGlobal[a]?.matches.some(m =>
-                      ["1H","2H","HT","ET","P","BT","LIVE"].includes(m.status?.short));
-                    const bLive = groupedGlobal[b]?.matches.some(m =>
-                      ["1H","2H","HT","ET","P","BT","LIVE"].includes(m.status?.short));
-                    if (aLive && !bLive) return -1;
-                    if (!aLive && bLive) return 1;
-                    return a.localeCompare(b);
-                  })
-                  .map(([leagueName, group]) => {
-                    const hasLive = group.matches.some(m =>
-                      ["1H","2H","HT","ET","P","BT","LIVE"].includes(m.status?.short));
-                    return (
-                      <div key={leagueName}>
-                        {/* League header */}
-                        <div className="flex items-center gap-2 mb-2 px-1">
+                {worldEntries.map((group) => {
+                  const hasLive = group.matches.some((match) =>
+                    isLiveStatusShort(match.status?.short),
+                  );
+
+                  return (
+                    <section
+                      key={group.league?.name || group.preferredLeague?.slug}
+                      className="overflow-hidden rounded-[28px] border border-gray-800 bg-gray-900/70"
+                    >
+                      <div className="border-b border-gray-800 px-5 py-4">
+                        <div className="flex flex-wrap items-center gap-3">
                           {group.league?.logo && (
                             <img
                               src={group.league.logo}
                               alt=""
-                              className="w-5 h-5 rounded-full object-cover"
+                              className="h-7 w-7 rounded-full object-cover"
                             />
                           )}
                           {group.league?.flag && (
                             <img
                               src={group.league.flag}
                               alt=""
-                              className="w-4 h-3 rounded-sm object-cover"
+                              className="h-4 w-6 rounded-sm object-cover"
                             />
                           )}
-                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">
-                            {leagueName}
-                          </span>
-                          {group.league?.country && (
-                            <span className="text-[9px] text-gray-600">
-                              · {group.league.country}
-                            </span>
-                          )}
+                          <div>
+                            <h4 className="text-lg font-black text-white">
+                              {group.preferredLeague?.name || group.league?.name || "Other"}
+                            </h4>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
+                              {group.league?.country || group.preferredLeague?.country || "Global feed"}
+                            </p>
+                          </div>
                           {hasLive && (
-                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-600/20 border border-red-700/40 text-red-400 text-[8px] font-black uppercase">
-                              <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                            <span className="flex items-center gap-1 rounded-full border border-red-700/40 bg-red-600/20 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-red-400">
+                              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
                               live
                             </span>
                           )}
-                        </div>
-
-                        {/* Match rows */}
-                        <div className="space-y-1.5">
-                          {group.matches.map((m, i) => (
-                            <GlobalMatchRow key={m.id || i} match={m} index={i} />
-                          ))}
+                          {group.preferredLeague?.slug === "psl" && (
+                            <span className="rounded-full border border-yellow-700/40 bg-yellow-500/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-yellow-400">
+                              South Africa tracked
+                            </span>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="space-y-2 p-4">
+                        {group.matches.map((match, index) => (
+                          <GlobalMatchRow key={match.id || index} match={match} index={index} />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             ) : (
               <motion.div

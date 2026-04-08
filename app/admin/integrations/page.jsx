@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
+  FaBasketballBall,
+  FaBolt,
   FaBroadcastTower,
   FaCheckCircle,
   FaCloud,
   FaExternalLinkAlt,
+  FaGlobeAfrica,
   FaPlus,
+  FaSearch,
   FaSyncAlt,
   FaTrash,
   FaVideo,
@@ -25,7 +29,9 @@ function StatusBadge({ status }) {
   };
 
   return (
-    <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${styles[status] || styles.missing}`}>
+    <span
+      className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${styles[status] || styles.missing}`}
+    >
       {status || "unknown"}
     </span>
   );
@@ -191,6 +197,16 @@ export default function AdminIntegrationsPage() {
 
   const providerCards = [
     {
+      title: "Core Auth",
+      body: health.providers?.system?.auth,
+      icon: <FaCheckCircle className="text-emerald-300" />,
+    },
+    {
+      title: "MongoDB",
+      body: health.providers?.system?.database,
+      icon: <FaCloud className="text-green-300" />,
+    },
+    {
       title: "iSports",
       body: health.providers?.sports,
       icon: <FaBroadcastTower className="text-orange-300" />,
@@ -199,6 +215,36 @@ export default function AdminIntegrationsPage() {
       title: "YouTube",
       body: health.providers?.youtube,
       icon: <FaVideo className="text-red-300" />,
+    },
+    {
+      title: "AI Gateway",
+      body: health.providers?.aiGateway,
+      icon: <FaBolt className="text-violet-300" />,
+    },
+    {
+      title: "Braintrust",
+      body: health.providers?.braintrust,
+      icon: <FaCheckCircle className="text-sky-300" />,
+    },
+    {
+      title: "Mux",
+      body: health.providers?.mux,
+      icon: <FaVideo className="text-pink-300" />,
+    },
+    {
+      title: "BallDontLie",
+      body: health.providers?.balldontlie,
+      icon: <FaBasketballBall className="text-amber-300" />,
+    },
+    {
+      title: "Google Search74",
+      body: health.providers?.googleSearch,
+      icon: <FaSearch className="text-blue-300" />,
+    },
+    {
+      title: "Weather",
+      body: health.providers?.weather,
+      icon: <FaGlobeAfrica className="text-cyan-300" />,
     },
     {
       title: "Vercel Sandbox",
@@ -221,7 +267,7 @@ export default function AdminIntegrationsPage() {
               Integrations
             </h1>
             <p className="mt-1 text-sm text-gray-400">
-              Provider health, runtime cache visibility, and curated reactor management.
+              Provider health, runtime cache visibility, weather/search coverage, and curated reactor management.
             </p>
           </div>
 
@@ -249,7 +295,7 @@ export default function AdminIntegrationsPage() {
           </div>
         ) : null}
 
-        <section className="grid gap-4 lg:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {providerCards.map((card) => (
             <div
               key={card.title}
@@ -271,9 +317,17 @@ export default function AdminIntegrationsPage() {
               </div>
               <div className="mt-4 space-y-2 text-sm text-gray-300">
                 {card.body?.baseUrl ? <div>Base URL: {card.body.baseUrl}</div> : null}
+                {card.body?.url ? <div>URL: {card.body.url}</div> : null}
+                {card.body?.host ? <div>Host: {card.body.host}</div> : null}
+                {card.body?.defaultModel ? <div>Default model: {card.body.defaultModel}</div> : null}
+                {card.body?.modelCount !== undefined ? <div>Model count: {card.body.modelCount}</div> : null}
                 {card.body?.sampleCount !== undefined ? <div>Sample count: {card.body.sampleCount}</div> : null}
+                {card.body?.projectCount !== undefined ? <div>Projects: {card.body.projectCount}</div> : null}
+                {card.body?.projectName ? <div>Project name: {card.body.projectName}</div> : null}
                 {card.body?.projectId ? <div>Project: {card.body.projectId}</div> : null}
                 {card.body?.teamId ? <div>Team: {card.body.teamId}</div> : null}
+                {card.body?.assetCount !== undefined ? <div>Assets: {card.body.assetCount}</div> : null}
+                {card.body?.hasSecret !== undefined ? <div>Secret: {card.body.hasSecret ? "present" : "missing"}</div> : null}
                 {card.body?.authMode ? <div>Auth mode: {card.body.authMode}</div> : null}
                 {card.body?.error ? <div className="text-amber-300">{card.body.error}</div> : null}
               </div>
@@ -410,6 +464,94 @@ export default function AdminIntegrationsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-3">
+          <div className="rounded-3xl border border-gray-800 bg-gray-900 p-5">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+              AI Gateway Models
+            </div>
+            <div className="mt-4 space-y-3">
+              {(health.providers?.aiGateway?.models || []).map((model) => (
+                <div
+                  key={model.id}
+                  className="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3 text-sm text-gray-300"
+                >
+                  <div className="font-semibold text-white">{model.id}</div>
+                  <div className="mt-1 text-xs uppercase tracking-[0.18em] text-gray-500">
+                    {model.ownedBy || "provider-managed"}
+                  </div>
+                </div>
+              ))}
+              {!(health.providers?.aiGateway?.models || []).length ? (
+                <div className="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3 text-sm text-gray-500">
+                  No AI Gateway model preview is available yet.
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-gray-800 bg-gray-900 p-5">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+              Weather Locations
+            </div>
+            <div className="mt-4 space-y-3">
+              {(health.providers?.weather?.locations || []).map((location) => (
+                <div
+                  key={location.slug}
+                  className="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3 text-sm text-gray-300"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-semibold text-white">{location.label}</div>
+                      <div className="mt-1 text-xs uppercase tracking-[0.18em] text-gray-500">
+                        {location.subtitle}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-black text-white">
+                        {location.temperature}°C
+                      </div>
+                      <div className="text-xs text-gray-500">{location.condition}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-gray-800 bg-gray-900 p-5">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+              Search and Media Samples
+            </div>
+            <div className="mt-4 space-y-3">
+              {(health.providers?.googleSearch?.sampleResults || []).map((result) => (
+                <div
+                  key={result.url}
+                  className="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3 text-sm text-gray-300"
+                >
+                  <div className="font-semibold text-white">{result.title}</div>
+                  <div className="mt-1 text-xs text-gray-500">{result.source || result.url}</div>
+                </div>
+              ))}
+              {(health.providers?.mux?.assets || []).map((asset) => (
+                <div
+                  key={asset.id}
+                  className="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3 text-sm text-gray-300"
+                >
+                  <div className="font-semibold text-white">Mux asset {asset.id}</div>
+                  <div className="mt-1 text-xs uppercase tracking-[0.18em] text-gray-500">
+                    {asset.status || "unknown"} · {Math.round(asset.duration || 0)}s
+                  </div>
+                </div>
+              ))}
+              {!((health.providers?.googleSearch?.sampleResults || []).length || (health.providers?.mux?.assets || []).length) ? (
+                <div className="rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3 text-sm text-gray-500">
+                  Search and Mux previews will appear here once those providers respond.
+                </div>
+              ) : null}
             </div>
           </div>
         </section>

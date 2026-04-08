@@ -2,6 +2,11 @@
 
 ## Recent Commits
 
+- `9249309` `clarify-session-3-parallel-ownership`
+- `7be1c95` `refine-session-3-reward-handoff`
+- `0f1d03f` `add-session-3-reward-qa-checklist`
+- `29bd592` `wire-session-3-vault-index`
+- `ed13710` `session-3-coordination-layer`
 - `3bdc468` `homepage-csp-hero-polish`
 - `1fdba7a` `followup-external-access-blockers`
 - `7781658` `followup-newsletter-mongo-resilience`
@@ -17,6 +22,13 @@
 - `npm run build`
 - clean dev restart when phase risk touched route/build state
 - smoke checks on changed public routes
+
+## Session 3 Verification
+
+- current combined working tree completed `npm run build` successfully on `2026-04-08`
+- `next build` is linting again because the parallel lane restored the normal build script
+- build currently passes with a sizable warning backlog, not hard lint errors
+- data access during build still surfaces the known Atlas allowlist blocker, but the site falls back instead of failing the build
 
 ## Local Dev Notes
 

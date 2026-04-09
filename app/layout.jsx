@@ -9,9 +9,13 @@ import ClientOnly from "@/components/ClientOnly";
 import PageTransition from "@/components/PageTransition";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { FeatureAccessProvider } from "@/hooks/useFeatureAccess";
-import { SITE_URL } from "@/lib/constants";
 import { Analytics } from "@vercel/analytics/react";
 import "../assets/styles/globals.css";
+
+const SITE_URL =
+  process.env.NODE_ENV === "production"
+    ? process.env.NEXTAUTH_URL || "https://fivesarena.com"
+    : process.env.NEXTAUTH_URL || "http://localhost:3002";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -36,7 +40,7 @@ export const metadata = {
   openGraph: {
     type: "website",
     locale: "en_ZA",
-    url: SITE_URL,
+    url: process.env.NEXTAUTH_URL || "https://fivesarena.com",
     siteName: "Bookit 5's Arena",
     title: "Bookit 5's Arena | World Cup 5s Football Cape Town",
     description:

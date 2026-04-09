@@ -45,6 +45,7 @@ const AdminDashboard = () => {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [_selectedCourt, _setSelectedCourt] = useState(null);
 
   const [teams, setTeams] = useState([]);
   const [verifying, setVerifying] = useState(null);

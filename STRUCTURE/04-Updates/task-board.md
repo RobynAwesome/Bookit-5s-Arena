@@ -22,7 +22,6 @@
 - [x] harden newsletter subscriptions for local Mongo outages
 - [x] harden MongoDB connection fallback from SRV to direct Atlas path
 - [x] clean homepage hero/header/theme/CSP production polish issues
-- [ ] run launch QA on the repaired fixtures stack (`/fixtures`, `/fixtures/arena`, `/fixtures/premier-league`) with live multi-provider data
 - [ ] add Atlas allowlist access for the current dev machine so authenticated local QA can run
 - [ ] run a full authenticated manager/admin mutation QA pass with seeded data
 - [ ] activate RapidAPI access/subscription for `whatsapp-osint`

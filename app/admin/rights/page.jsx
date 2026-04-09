@@ -4,7 +4,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { isSuperAdmin } from "@/lib/accessControl";
 import {
   FaUserShield,
   FaSearch,
@@ -18,6 +17,8 @@ import {
   FaLock,
   FaChevronDown,
 } from "react-icons/fa";
+
+const SUPER_ADMIN_EMAIL = "rkholofelo@gmail.com";
 
 const ROLE_CONFIG = {
   admin:   { label: "Admin",   color: "#f97316" },
@@ -40,7 +41,7 @@ function UserRow({ user, onRolesUpdate }) {
   const [roles, setRoles] = useState(user.roles || ["user"]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const isSA = isSuperAdmin(user.email);
+  const isSA = user.email === SUPER_ADMIN_EMAIL;
 
   const toggleRole = (role) => {
     if (role === "user") return;
@@ -521,7 +522,7 @@ export default function RightsPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") { router.push("/login"); return; }
-    if (status === "authenticated" && !isSuperAdmin(session.user.email)) {
+    if (status === "authenticated" && session.user.email !== SUPER_ADMIN_EMAIL) {
       router.push("/");
     }
   }, [status, session, router]);
@@ -543,7 +544,7 @@ export default function RightsPage() {
   }, [page, search]);
 
   useEffect(() => {
-    if (status === "authenticated" && isSuperAdmin(session?.user?.email)) {
+    if (status === "authenticated" && session?.user?.email === SUPER_ADMIN_EMAIL) {
       fetchUsers();
     }
   }, [fetchUsers, status, session]);
@@ -562,7 +563,7 @@ export default function RightsPage() {
     );
   }
 
-  if (!isSuperAdmin(session?.user?.email)) return null;
+  if (session?.user?.email !== SUPER_ADMIN_EMAIL) return null;
 
   const totalPages = Math.ceil(total / limit);
 

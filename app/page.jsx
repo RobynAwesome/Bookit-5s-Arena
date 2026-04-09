@@ -18,24 +18,11 @@ import Court            from '@/models/Court';
 
 export const revalidate = 60; // ISR — revalidate every 60 seconds
 
-const HOME_COURTS_TIMEOUT_MS = 1500;
-
 // ─── server-side fetch ────────────────────────────────────────
 const getCourts = async () => {
   try {
-    const data = await Promise.race([
-      (async () => {
-        await connectDB();
-        return Court.find().sort({ sortOrder: 1 }).lean();
-      })(),
-      new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Home court query timed out")),
-          HOME_COURTS_TIMEOUT_MS,
-        ),
-      ),
-    ]);
-
+    await connectDB();
+    const data = await Court.find().sort({ sortOrder: 1 }).lean();
     return data.map(doc => ({ 
       ...doc, 
       _id: doc._id.toString(),

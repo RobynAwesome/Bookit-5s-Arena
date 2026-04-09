@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { SITE_URL } from '@/lib/constants';
+
+const SITE_URL = process.env.NEXTAUTH_URL || 'https://fivesarena.com';
 
 export async function GET() {
   const items = [

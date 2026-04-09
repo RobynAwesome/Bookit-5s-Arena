@@ -746,9 +746,9 @@ function NewsCard({ article, index }) {
    MAIN PAGE
    ═══════════════════════════════════════════════════════════════ */
 
-export default function ArenaFixturesExperience({ defaultTab = "arena" }) {
+export default function FixturesPage() {
   // Tab state
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [activeTab, setActiveTab] = useState("arena");
 
   // Arena tab state
   const [arenaFixtures, setArenaFixtures] = useState([]);
@@ -778,10 +778,6 @@ export default function ArenaFixturesExperience({ defaultTab = "arena" }) {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
   const pollRef = useRef(null);
-
-  useEffect(() => {
-    setActiveTab(defaultTab);
-  }, [defaultTab]);
 
   // ── Fetch arena fixtures ──
   const fetchArena = useCallback(async () => {
@@ -1058,7 +1054,7 @@ export default function ArenaFixturesExperience({ defaultTab = "arena" }) {
                     </p>
                   </div>
                   <Link
-                    href="/fixtures/premier-league"
+                    href="/fixtures"
                     className="inline-flex items-center gap-2 rounded-full border border-green-700/50 bg-green-600/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-green-400 transition hover:bg-green-600/20"
                   >
                     Premier League Hub <FaChevronRight size={10} />

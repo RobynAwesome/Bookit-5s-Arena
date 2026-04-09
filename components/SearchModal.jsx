@@ -36,11 +36,19 @@ const PAGES = [
   { name: 'Rights Management', href: '/admin/rights', icon: FaUser, category: 'Admin', auth: 'admin' },
 ];
 
-const SearchModalDialog = ({ isAdmin, isAuthenticated, isManager, onClose }) => {
+const SearchModal = () => {
+  const { data: session } = useSession();
+  const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef(null);
   const router = useRouter();
+  const pathname = usePathname();
+
+  const userRole = session?.user?.activeRole || session?.user?.role;
+  const isAuthenticated = !!session;
+  const isAdmin = userRole === 'admin';
+  const isManager = userRole === 'manager';
 
   // Filter based on authentication role and query
   const filtered = PAGES.filter((p) => {
@@ -61,19 +69,18 @@ const SearchModalDialog = ({ isAdmin, isAuthenticated, isManager, onClose }) => 
 
   const flatResults = filtered;
 
-  const navigate = useCallback((href) => {
-    onClose();
-    if (href.startsWith('/#')) {
-      window.location.href = href;
+  const handleKeyDown = useCallback((e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      setIsOpen((prev) => !prev);
       return;
     }
-
-    router.push(href);
-  }, [onClose, router]);
-
-  const handleKeyDown = useCallback((e) => {
+    if (!isOpen) {
+      if (e.key === 'Escape') setIsOpen(false);
+      return;
+    }
     if (e.key === 'Escape') {
-      onClose();
+      setIsOpen(false);
       return;
     }
     if (!flatResults.length) return;
@@ -91,7 +98,7 @@ const SearchModalDialog = ({ isAdmin, isAuthenticated, isManager, onClose }) => 
       e.preventDefault();
       navigate(flatResults[highlightedIndex].href);
     }
-  }, [flatResults, highlightedIndex, navigate, onClose]);
+  }, [flatResults, highlightedIndex, isOpen]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -99,105 +106,36 @@ const SearchModalDialog = ({ isAdmin, isAuthenticated, isManager, onClose }) => 
   }, [handleKeyDown]);
 
   useEffect(() => {
-    const focusTimer = setTimeout(() => inputRef.current?.focus(), 100);
-    return () => clearTimeout(focusTimer);
-  }, []);
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+      setQuery('');
+      setHighlightedIndex(0);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [query]);
+
+  const navigate = (href) => {
+    setIsOpen(false);
+    if (href.startsWith('/#')) {
+      // eslint-disable-next-line react-hooks/immutability
+      window.location.href = href;
+    } else {
+      router.push(href);
+    }
+  };
 
   const categories = [...new Set(filtered.map((p) => p.category))];
 
   return (
     <>
-      <motion.div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-      <motion.div
-        className="fixed top-[15%] left-1/2 -translate-x-1/2 w-[90vw] max-w-lg bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-[9999] overflow-hidden"
-        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      >
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
-          <FaSearch className="text-green-400 flex-shrink-0" size={14} />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setHighlightedIndex(0);
-            }}
-            placeholder="Search pages…"
-            className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-gray-500"
-          />
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 cursor-pointer">
-            <FaTimes size={12} />
-          </button>
-        </div>
-
-        <div className="max-h-80 overflow-y-auto p-2">
-          {filtered.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-8">No pages found for &ldquo;{query}&rdquo;</p>
-          ) : (
-            categories.map((cat) => (
-              <div key={cat} className="mb-2">
-                <p className="text-green-500 text-[10px] uppercase tracking-widest font-bold px-3 py-1">{cat}</p>
-                {filtered.filter((p) => p.category === cat).map((page) => {
-                  const Icon = page.icon;
-                  const pageIndex = flatResults.findIndex((item) => item.href === page.href);
-                  const isHighlighted = pageIndex === highlightedIndex;
-                  return (
-                    <motion.button
-                      key={page.href}
-                      onClick={() => navigate(page.href)}
-                      onMouseEnter={() => setHighlightedIndex(pageIndex)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer ${
-                        isHighlighted
-                          ? 'bg-green-600/10 text-white'
-                          : 'text-gray-300 hover:bg-green-600/10 hover:text-white'
-                      }`}
-                      whileHover={{ x: 3 }}
-                    >
-                      <Icon size={14} className="text-green-400 flex-shrink-0" />
-                      <span className="text-sm">{page.name}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="border-t border-gray-800 px-4 py-2 flex items-center justify-between text-gray-600 text-[10px]">
-          <span>Navigate with ↑↓ · Open with ↵</span>
-          <span>ESC to close</span>
-        </div>
-      </motion.div>
-    </>
-  );
-};
-
-const SearchModalShell = ({ isAdmin, isAuthenticated, isManager }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleShortcut = useCallback((e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault();
-      setIsOpen((prev) => !prev);
-    }
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleShortcut);
-    return () => document.removeEventListener('keydown', handleShortcut);
-  }, [handleShortcut]);
-
-  return (
-    <>
+      {/* Trigger button */}
       <motion.button
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800/60 border border-gray-700 text-gray-400 text-xs hover:border-green-500/40 hover:text-gray-300 transition-all cursor-pointer shrink-0"
@@ -211,35 +149,84 @@ const SearchModalShell = ({ isAdmin, isAuthenticated, isManager }) => {
         </kbd>
       </motion.button>
 
+      {/* Modal overlay */}
       <AnimatePresence>
         {isOpen && (
-          <SearchModalDialog
-            isAdmin={isAdmin}
-            isAuthenticated={isAuthenticated}
-            isManager={isManager}
-            onClose={() => setIsOpen(false)}
-          />
+          <>
+            <motion.div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+            />
+            <motion.div
+              className="fixed top-[15%] left-1/2 -translate-x-1/2 w-[90vw] max-w-lg bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-[9999] overflow-hidden"
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            >
+              {/* Search input */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
+                <FaSearch className="text-green-400 flex-shrink-0" size={14} />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search pages…"
+                  className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-gray-500"
+                />
+                <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-gray-300 cursor-pointer">
+                  <FaTimes size={12} />
+                </button>
+              </div>
+
+              {/* Results */}
+              <div className="max-h-80 overflow-y-auto p-2">
+                {filtered.length === 0 ? (
+                  <p className="text-gray-500 text-sm text-center py-8">No pages found for &ldquo;{query}&rdquo;</p>
+                ) : (
+                  categories.map((cat) => (
+                    <div key={cat} className="mb-2">
+                      <p className="text-green-500 text-[10px] uppercase tracking-widest font-bold px-3 py-1">{cat}</p>
+                      {filtered.filter((p) => p.category === cat).map((page) => {
+                        const Icon = page.icon;
+                        const pageIndex = flatResults.findIndex((item) => item.href === page.href);
+                        const isHighlighted = pageIndex === highlightedIndex;
+                        return (
+                          <motion.button
+                            key={page.href}
+                            onClick={() => navigate(page.href)}
+                            onMouseEnter={() => setHighlightedIndex(pageIndex)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer ${
+                              isHighlighted
+                                ? 'bg-green-600/10 text-white'
+                                : 'text-gray-300 hover:bg-green-600/10 hover:text-white'
+                            }`}
+                            whileHover={{ x: 3 }}
+                          >
+                            <Icon size={14} className="text-green-400 flex-shrink-0" />
+                            <span className="text-sm">{page.name}</span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="border-t border-gray-800 px-4 py-2 flex items-center justify-between text-gray-600 text-[10px]">
+                <span>Navigate with ↑↓ · Open with ↵</span>
+                <span>ESC to close</span>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>
-  );
-};
-
-const SearchModal = () => {
-  const { data: session } = useSession();
-  const pathname = usePathname();
-  const userRole = session?.user?.activeRole || session?.user?.role;
-  const isAuthenticated = !!session;
-  const isAdmin = userRole === 'admin';
-  const isManager = userRole === 'manager';
-
-  return (
-    <SearchModalShell
-      key={pathname || '/'}
-      isAdmin={isAdmin}
-      isAuthenticated={isAuthenticated}
-      isManager={isManager}
-    />
   );
 };
 

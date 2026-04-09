@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaLayerGroup,
+  FaTags,
   FaTrophy,
   FaTools,
   FaPlay,
@@ -90,16 +91,14 @@ const POSTS = [
 
 // ── Background Particle ──
 function HubParticle({ idx }) {
-  const [w, h, left, top, dur] = useMemo(
-    () => [
-      2 + (idx % 4),
-      2 + ((idx * 3) % 4),
-      (idx * 17) % 100,
-      (idx * 29) % 100,
-      5 + (idx % 5),
-    ],
-    [idx],
-  );
+  // eslint-disable-next-line react-hooks/purity
+  const [w, h, left, top, dur] = useMemo(() => [
+    Math.random() * 4 + 2, // eslint-disable-line react-hooks/purity
+    Math.random() * 4 + 2, // eslint-disable-line react-hooks/purity
+    Math.random() * 100, // eslint-disable-line react-hooks/purity
+    Math.random() * 100, // eslint-disable-line react-hooks/purity
+    5 + Math.random() * 5, // eslint-disable-line react-hooks/purity
+  ], []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <motion.div
@@ -247,7 +246,7 @@ export default function BlogIndexPage() {
           <AnimatePresence mode="popLayout">
             {filteredPosts
               .filter((p) => !p.featured || activeSeries !== "all")
-              .map((post) => (
+              .map((post, i) => (
                 <motion.div
                   layout
                   key={post.id}

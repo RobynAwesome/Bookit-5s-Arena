@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/getSession';
-import { SITE_URL } from '@/lib/constants';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
@@ -38,7 +37,7 @@ export async function GET() {
       await user.save(); // triggers pre-save hook to generate code
     }
 
-    const shareUrl = `${SITE_URL}/register?ref=${user.referralCode}`;
+    const shareUrl = `${process.env.NEXTAUTH_URL || 'https://fivesarena.com'}/register?ref=${user.referralCode}`;
 
     // Count direct referrals (level 1 in chain)
     const directReferrals = user.referralChain.filter((r) => r.level === 1).length;

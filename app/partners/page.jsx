@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { FaHandshake, FaStar, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaHandshake, FaGlobe, FaStar, FaExternalLinkAlt } from 'react-icons/fa';
+import Image from 'next/image';
 
 const SPONSORS = [
   { id: 1, name: 'Hellenic FC', tier: 'Platinum Partner', desc: 'Home of the 5s Arena World Cup.', link: 'https://hellenicfc.co.za' },

@@ -5,72 +5,10 @@ import { getLeaguePriority, getTopLeagueMatch } from '@/lib/sports/topLeagues';
 
 const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
 const SPORTSDB_BASE = 'https://www.thesportsdb.com/api/v1/json/3';
-const LIVE_STATUS_SHORTS = new Set(['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'PEN']);
 
 // In-memory cache (60s TTL)
 let cache = { data: null, timestamp: 0, key: '' };
 const CACHE_TTL = 60_000;
-
-function getDateKey(value = new Date()) {
-  const date = value instanceof Date ? value : new Date(value);
-  return date.toISOString().split('T')[0];
-}
-
-function dedupeMatches(matches) {
-  const deduped = new Map();
-
-  for (const match of matches) {
-    const fallbackKey = [
-      match?.league?.name || 'league',
-      match?.home?.name || 'home',
-      match?.away?.name || 'away',
-      match?.date || 'date',
-    ].join(':');
-    const key = String(match?.id || fallbackKey);
-    const existing = deduped.get(key);
-
-    if (!existing) {
-      deduped.set(key, match);
-      continue;
-    }
-
-    const matchIsLive = LIVE_STATUS_SHORTS.has(match?.status?.short);
-    const existingIsLive = LIVE_STATUS_SHORTS.has(existing?.status?.short);
-    const matchHasScore =
-      match?.goals?.home !== null &&
-      match?.goals?.home !== undefined &&
-      match?.goals?.away !== null &&
-      match?.goals?.away !== undefined;
-    const existingHasScore =
-      existing?.goals?.home !== null &&
-      existing?.goals?.home !== undefined &&
-      existing?.goals?.away !== null &&
-      existing?.goals?.away !== undefined;
-
-    if ((matchIsLive && !existingIsLive) || (matchHasScore && !existingHasScore)) {
-      deduped.set(key, match);
-    }
-  }
-
-  return [...deduped.values()];
-}
-
-async function fetchFromISports(date) {
-  const targetDate = date || getDateKey();
-  const [liveMatches, scheduledMatches] = await Promise.all(
-    date
-      ? [fetchISportsLiveScores({ date: targetDate }), Promise.resolve([])]
-      : [fetchISportsLiveScores(), fetchISportsLiveScores({ date: targetDate })],
-  );
-
-  const matches = dedupeMatches([...(liveMatches || []), ...(scheduledMatches || [])]);
-
-  return {
-    matches,
-    available: true,
-    source: date ? 'isports-schedule' : 'isports-live-schedule',
-  };
-}
 
 // TheSportsDB free endpoints — key "3" is the documented free tier
 async function fetchFromSportsDB(date) {
@@ -187,8 +125,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
     const topLeaguesOnly = searchParams.get('topLeaguesOnly') === 'true';
-    const targetDate = date || getDateKey();
-    const cacheKey = `livescores-${targetDate}-${topLeaguesOnly ? 'top25' : 'all'}`;
+    const cacheKey = `livescores-${date || 'today'}`;
 
     // Return cached data if still fresh
     if (cache.key === cacheKey && Date.now() - cache.timestamp < CACHE_TTL && cache.data) {
@@ -198,11 +135,8 @@ export async function GET(request) {
     let result;
 
     try {
-      result = await fetchFromISports(date);
-
-      if (!result.matches.length) {
-        throw new Error('iSports returned no matches for the current window');
-      }
+      const matches = await fetchISportsLiveScores({ date });
+      result = { matches, available: true, source: 'isports' };
     } catch (iSportsError) {
       console.warn('iSports failed, falling back to legacy providers:', iSportsError.message);
 
@@ -210,15 +144,19 @@ export async function GET(request) {
       if (process.env.FOOTBALL_API_KEY) {
         try {
           const params = new URLSearchParams();
-          params.set('date', targetDate);
+          if (date) {
+            params.set('date', date);
+          } else {
+            params.set('live', 'all');
+          }
           result = await fetchFromApiFootball(params);
         } catch (err) {
           console.warn('API-Football failed, falling back to TheSportsDB:', err.message);
-          result = await fetchFromSportsDB(targetDate);
+          result = await fetchFromSportsDB(date);
         }
       } else {
         // Free fallback — TheSportsDB (today's/date's matches, no key needed)
-        result = await fetchFromSportsDB(targetDate);
+        result = await fetchFromSportsDB(date);
       }
     }
 
@@ -248,8 +186,8 @@ export async function GET(request) {
           return a.leaguePriority - b.leaguePriority;
         }
 
-        const aLive = LIVE_STATUS_SHORTS.has(a.status?.short);
-        const bLive = LIVE_STATUS_SHORTS.has(b.status?.short);
+        const aLive = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(a.status?.short);
+        const bLive = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(b.status?.short);
 
         if (aLive !== bLive) {
           return aLive ? -1 : 1;

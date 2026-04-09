@@ -13,6 +13,8 @@ import {
   FaUsers,
   FaCalendarAlt,
   FaLinkedin,
+  FaInstagram,
+  FaFacebook,
   FaArrowRight,
   FaHeart,
 } from "react-icons/fa";
@@ -59,12 +61,10 @@ export default function AboutPage() {
           {/* Animated Brand Logo */}
           <div className="flex flex-col items-center justify-center mb-8">
             <div className="relative w-36 h-36 mb-4 animate-bounce-slow">
-              <Image
+              <img
                 src="/images/logo.png"
                 alt="Bookit 5s Arena Logo"
-                fill
-                sizes="144px"
-                className="object-contain rounded-full"
+                className="w-full h-full object-contain rounded-full"
                 style={{ animation: "spin 8s linear infinite" }}
               />
             </div>

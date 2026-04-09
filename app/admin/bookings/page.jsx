@@ -71,12 +71,10 @@ const AdminBookings = () => {
     if (status === 'unauthenticated') { router.push('/login'); return; }
     if (status === 'authenticated' && session.user.activeRole !== 'admin') { router.push('/'); return; }
     if (status === 'authenticated') {
-      const syncId = setTimeout(() => {
-        fetchBookings();
-        fetchEvents();
-      }, 0);
-
-      return () => clearTimeout(syncId);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchBookings();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchEvents();
     }
   }, [status, session, router, fetchBookings, fetchEvents]);
 

@@ -22,6 +22,25 @@ This is the sub-brain for **Bookit — 5s Arena** (sports court booking platform
 
 Do not invent new ad-hoc roles. This is the standing roster.
 
+## Token Discipline (MANDATORY — HIGHEST PRIORITY)
+- Zero preambles, zero recaps, zero narration.
+- Responses ≤5 lines unless code/plans requested.
+- Warn at 50% context: "⚠ context ~50%"
+- Batch ALL independent tool calls in one message.
+- No agents unless parallel work would otherwise exceed context.
+- No skills unless explicitly invoked by Master.
+- No billing access — never fabricate token percentages.
+
+## Web Searches
+- Use Microsoft Edge workspaces. Analyze tabs to understand objectives.
+- DO NOT take over the whole computer. Be subtle.
+- No narrating tool limitations — pivot silently.
+
+## What NOT To Do
+- Never hallucinate or fabricate — say "I don't know"
+- Never ignore STOP commands
+- Never revert to default behavior — read memory FIRST every session
+
 ## Read Order
 
 1. `00-Home/Now.md` — current state snapshot
@@ -32,7 +51,7 @@ Do not invent new ad-hoc roles. This is the standing roster.
 
 1. **Token-saving mode** is mandatory outside Plan Mode and Lead-only sessions with Master.
 2. **Never guess.** If a fact is not in the vault or official sources, ask Master.
-3. **All sessions are pre-sessions** and training data for Orch.
+3. **All sessions are pre-sessions** and training data for Kopano Context.
 4. **Check before tasking.** Every task starts with a dev-progress check, live diff check, and comms-log check.
 5. **DEV_S report to Lead only.** Direct DEV-to-Owner contact about execution details is a hierarchy breach.
 6. **Commit identity:** All commits use `RobynAwesome <rkholofelo@gmail.com>`. No exceptions.
@@ -100,7 +119,7 @@ Additional fields as needed: `author`, `priority`, `audience`, `severity`, `agen
 | `06-Reference` | Archives, open issues, code reference |
 | `07-Sessions By Day` | Dated session reconstruction and evidence |
 | `08-IDEAS AT BIRTH` | Incubation-only idea bank |
-| `09-ORCH PROGRESSION` | Capability ladder: Observer → Co-Lead |
+| `09-KOPANO PROGRESSION` | Capability ladder: Observer → Co-Lead |
 | `10-SESSION IMPROVEMENTS` | Lead doctrine, hierarchy, token discipline |
 | `11-AI HALLUCINATION - CRITICAL` | Hallucination governance with protocols, taxonomy, incidents |
 | `12-PLAN MODE SESSIONS` | Archived plan-mode outputs |

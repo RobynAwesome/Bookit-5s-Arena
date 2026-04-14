@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { FaUserShield, FaUsers, FaFutbol, FaArrowRight } from "react-icons/fa";
 import Image from "next/image";
@@ -38,7 +38,7 @@ const ROLE_CONFIG = {
   },
 };
 
-export default function RoleSelectPage() {
+function RoleSelectInner() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -166,5 +166,14 @@ export default function RoleSelectPage() {
         You can switch roles anytime from the navigation
       </motion.p>
     </div>
+  );
+}
+
+
+export default function RoleSelectPage() {
+  return (
+    <Suspense fallback={null}>
+      <RoleSelectInner />
+    </Suspense>
   );
 }

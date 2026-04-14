@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaSignOutAlt,
@@ -133,7 +133,7 @@ const ADMIN_MOBILE_ADVANCED = [
   { href: "/admin/audit",        icon: <FaHistory size={11} className="text-amber-400" />,      label: "Audit Log", comingSoon: true },
 ];
 
-const Header = () => {
+const HeaderInner = () => {
   const { data: session } = useSession();
   const { theme, themes, cycleTheme } = useTheme();
   const pathname = usePathname();
@@ -611,5 +611,11 @@ const Header = () => {
     </header>
   );
 };
+
+const Header = () => (
+  <Suspense fallback={null}>
+    <HeaderInner />
+  </Suspense>
+);
 
 export default Header;

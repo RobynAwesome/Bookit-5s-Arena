@@ -1,5 +1,13 @@
 # Dev Tracker
 
+## Root Audit & God-Mode Bug Triage | 2026-04-14 14:15
+
+- **Lead:** `Gemini Code Assist`
+- **God-Mode Navbar Issue:** Identified infinite loading bug affecting God-Mode Admin (`rkholofelo@gmail.com`), Regular Admin, and Manager interfaces. Suspected cause: routing loop or missing `<Suspense>` wrapper around client hooks/session checks in `Header.jsx`/`Navbar.tsx`.
+- **Performance & CSP Blocks:** Tracked `Content Security Policy` violations blocking `https://vercel.live` fonts and Google avatar images (`lh3.googleusercontent.com`).
+- **KC Check-in:** Reviewed Intern-Dev (KC) progress.
+- **Action Required:** Awaiting `components/Navbar.tsx` (or `Header.tsx`) and `next.config.js`/`middleware.ts` to implement the routing loop fix, optimize load speeds, and repair CSP headers.
+
 ## 20-Task Sprint & KasiLink Hardening | 2026-04-10 10:15
 
 - **Lead:** `Gemini Code Assist`
@@ -104,9 +112,9 @@
 - parallel Codex report confirms `npm run lint` passes with `73 warnings` and `0 errors`
 - parallel Codex report confirms `npm run build` passes and did not touch untracked Session 3 docs or `lib/bookingSlots.js`
 - latest safe-lane verification shows `npm run lint` now passes with `56 warnings` and `0 errors` on the combined tree
-- booking/court lane targeted eslint now passes with `0` warnings and `0` errors
-- targeted eslint for the safe warning-reduction files also passes with `0` warnings and `0` errors
-- second safe-lane warning-reduction batch passes targeted eslint with `0` warnings and `0` errors
+- booking/court lane targeted eslint now passes with `0` warnings and `0 errors`
+- targeted eslint for the safe warning-reduction files also passes with `0` warnings and `0 errors`
+- second safe-lane warning-reduction batch passes targeted eslint with `0` warnings and `0 errors`
 - court media files were regenerated at `2026-04-08 18:41` and service-worker cache version was bumped
 - hourly booking selection is now enforced in UI and booking APIs for create, guest reserve, and edit flows
 - `app/courts/[id]/page.jsx` now falls back to seeded local courts when Mongo is unavailable or the route uses a local fallback id

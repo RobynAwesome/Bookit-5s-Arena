@@ -15,7 +15,7 @@ status: active
 # WhatsApp Integration Guide (Phase 3)
 
 > Connect orch AI agents to your phone using the **Evolution API** bridge.
-> See also: [Orch Blueprint](../01-Mission/Orch%20Blueprint.md), [CLI Specification](CLI%20Specification.md), [Project Status](../04-Updates/Project%20Status.md)
+> See also: [KC Blueprint](../01-Mission/Orch%20Blueprint.md), [CLI Specification](CLI%20Specification.md), [Project Status](../04-Updates/Project%20Status.md)
 
 ## 1. Start the Messaging Bridge
 

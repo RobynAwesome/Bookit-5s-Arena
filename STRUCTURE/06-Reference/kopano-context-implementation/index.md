@@ -1,5 +1,5 @@
 ---
-title: orch-code-implemtation Index
+title: kopano-context-implementation Index
 created: 2026-04-10
 updated: 2026-04-10
 author: Codex
@@ -9,7 +9,7 @@ tags:
 status: active
 ---
 
-# orch-code-implemtation
+# kopano-context-implementation
 
 > Auto-generated index for this imported-reference folder.
 > Purpose: Imported reference codebase preserved inside Schematics for study and comparison.

@@ -1,9 +1,9 @@
-# Bookit5sArena-SUB-BRAIN — Agent Instructions
+# Bookit-5S-Arena SUB-BRAIN — Agent Instructions
 
-> This is the **Bookit5sArena-SUB-BRAIN**.
+> This is the **Bookit-5S-Arena SUB-BRAIN**.
 > The **MAIN-BRAIN** lives at: `C:\Users\rkhol\OneDrive\Documents\Anthropic\Introduction to MCP\Schematics\`
 > All session outcomes MUST be synced to MAIN-BRAIN before a session is considered closed.
-> **STALE WARNING:** Old files in this vault use `Orch` — correct name is `Kopano Context` (KC). `09-ORCH PROGRESSION` should be `09-KOPANO PROGRESSION`. Do NOT use legacy naming in new files.
+> **RENAME COMPLETE (2026-04-16):** Legacy `Orch` naming replaced with `Kopano Context` (KC). Folders: `09-KOPANO CONTEXT PROGRESSION`, `05-Training/KC Train Logs`, `06-Reference/kopano-context-implementation`. Do NOT use legacy `Orch` naming in new files.
 
 ## Vault Purpose
 

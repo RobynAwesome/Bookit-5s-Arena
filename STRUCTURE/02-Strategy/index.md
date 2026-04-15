@@ -17,11 +17,11 @@ status: active
 ## Key Notes
 
 - [KasiLink Integration Plan](KasiLink%20Integration%20Plan.md)
-- [Orch Labs Strategy](Orch%20Labs%20Strategy.md)
+- [KC Labs Strategy](Orch%20Labs%20Strategy.md)
 - [Microsoft Contract Strategy](Microsoft%20Contract%20Strategy.md)
 - [Open Source Product-Ready AI Top 50](Open%20Source%20Product-Ready%20AI%20Top%2050.md)
 - [Adoption Checklist](Adoption%20Checklist.md)
-- [Orch Concept And Future Foresight](Orch%20Concept%20And%20Future%20Foresight.md)
+- [KC Concept And Future Foresight](Orch%20Concept%20And%20Future%20Foresight.md)
 
 ## Use This Folder For
 

@@ -15,7 +15,7 @@ status: active
 # orch Project Status & Capabilities
 
 > Current state of the orch project as of 2026-04-09.
-> See also: [Now](../00-Home/Now.md), [Implementation Plan](Implementation%20Plan.md), [Orch Blueprint](../01-Mission/Orch%20Blueprint.md), [KasiLink Integration Plan](../02-Strategy/KasiLink%20Integration%20Plan.md), [DEV_S Reward Program](DEV_S%20Reward%20Program.md)
+> See also: [Now](../00-Home/Now.md), [Implementation Plan](Implementation%20Plan.md), [KC Blueprint](../01-Mission/Orch%20Blueprint.md), [KasiLink Integration Plan](../02-Strategy/KasiLink%20Integration%20Plan.md), [DEV_S Reward Program](DEV_S%20Reward%20Program.md)
 
 ## Current Snapshot - 2026-04-09
 

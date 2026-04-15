@@ -30,8 +30,8 @@ status: active
 - [Vault Hygiene and CRUD Discipline](Vault%20Hygiene%20and%20CRUD%20Discipline.md) - Obsidian-safe organization rules and the anti-sloppiness checklist
 - [Multi-Agent Profiling Framework](Multi-Agent%20Profiling%20Framework.md) - shared rubric for profiling people, agents, and workflows
 - [Claude Codex Gemini Session Analysis](Claude%20Codex%20Gemini%20Session%20Analysis.md) - cross-model behavior and role-fit summary
-- [Orch Train Logs](Orch%20Train%20Logs/index.md) - active logbook for lead quality, dev outcomes, hierarchy breaches, and token discipline
-- [09-ORCH PROGRESSION](../09-ORCH%20PROGRESSION/index.md) - staged ladder for Orch capability growth
+- [KC Train Logs](Orch%20Train%20Logs/index.md) - active logbook for lead quality, dev outcomes, hierarchy breaches, and token discipline
+- [09-KOPANO CONTEXT PROGRESSION](../09-ORCH%20PROGRESSION/index.md) - staged ladder for Orch capability growth
 - [11-AI HALLUCINATION - CRITICAL](../11-AI%20HALLUCINATION%20-%20CRITICAL/index.md) - critical hallucination governance system
 
 ## Human Profiles

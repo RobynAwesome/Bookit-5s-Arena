@@ -64,7 +64,7 @@ const nextConfig: NextConfig = {
               `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://maps.googleapis.com https://plausible.io https://www.youtube.com https://s.ytimg.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://vercel.live https://*.vercel.live`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https: http:",
-              "font-src 'self' https://fonts.gstatic.com",
+              "font-src 'self' https://fonts.gstatic.com https://assets.vercel.com",
               "connect-src 'self' https://maps.googleapis.com https://*.google-analytics.com https://api.anthropic.com https://api.groq.com https://plausible.io https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://vercel.live https://*.vercel.live",
               "frame-src 'self' https://www.youtube.com https://www.dailymotion.com https://player.vimeo.com https://www.fifa.com https://uefa.tv https://maps.google.com https://www.google.com https://maps.googleapis.com https://www.recaptcha.net https://vercel.live https://*.vercel.live",
               "object-src 'none'",

@@ -93,10 +93,10 @@ const ADMIN_ITEMS = [
   },
   { href: "/admin/rights", icon: FaKey, label: "Rights", color: "#eab308" },
   {
-    href: "/admin/dashboard#tools",
-    icon: FaCog,
-    label: "More",
-    color: "#9ca3af",
+    href: "/admin/analytics",
+    icon: FaChartBar,
+    label: "Analytics",
+    color: "#06b6d4",
   },
 ];
 
@@ -163,8 +163,8 @@ export default function BottomNavbar() {
 
   const isActive = (href) => {
     if (href === "/") return pathname === "/";
-    if (href.startsWith("/#")) return pathname === "/";
-    return pathname?.startsWith(href);
+    if (href.includes("#")) return pathname === href.split("#")[0];
+    return pathname === href || pathname?.startsWith(href + "/");
   };
 
   useEffect(() => {
@@ -198,6 +198,7 @@ export default function BottomNavbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   className="flex flex-col items-center rounded-lg px-2 py-1 transition-all"
                   style={{
                     color: active ? item.color : "#fff",

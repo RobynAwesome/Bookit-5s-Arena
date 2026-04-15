@@ -1,5 +1,5 @@
 ---
-title: Orch Concept And Future Foresight
+title: KC Concept And Future Foresight
 created: 2026-04-09
 updated: 2026-04-09
 author: Codex
@@ -12,10 +12,10 @@ priority: high
 status: active
 ---
 
-# Orch Concept And Future Foresight
+# KC Concept And Future Foresight
 
 > Strategic note on what Orch is becoming beyond the current demo push.
-> See also: [Orch Blueprint](../01-Mission/Orch%20Blueprint.md), [Orch Labs Strategy](Orch%20Labs%20Strategy.md), [Project Status](../04-Updates/Project%20Status.md), [Open Source Product-Ready AI Top 50](Open%20Source%20Product-Ready%20AI%20Top%2050.md)
+> See also: [KC Blueprint](../01-Mission/Orch%20Blueprint.md), [KC Labs Strategy](Orch%20Labs%20Strategy.md), [Project Status](../04-Updates/Project%20Status.md), [Open Source Product-Ready AI Top 50](Open%20Source%20Product-Ready%20AI%20Top%2050.md)
 
 ## Orch As A Concept
 

@@ -74,11 +74,11 @@ status: active
 - [Schematics Root Index](../index.md)
 - [07-Sessions By Day](../07-Sessions%20By%20Day/index.md)
 - [08-IDEAS AT BIRTH](../08-IDEAS%20AT%20BIRTH/index.md)
-- [09-ORCH PROGRESSION](../09-ORCH%20PROGRESSION/index.md)
+- [09-KOPANO CONTEXT PROGRESSION](../09-ORCH%20PROGRESSION/index.md)
 - [10-SESSION IMPROVEMENTS](../10-SESSION%20IMPROVEMENTS/index.md)
 - [11-AI HALLUCINATION - CRITICAL](../11-AI%20HALLUCINATION%20-%20CRITICAL/index.md)
 - [12-PLAN MODE SESSIONS](../12-PLAN%20MODE%20SESSIONS/index.md)
-- [Orch Train Logs](../05-Training/Orch%20Train%20Logs/index.md)
+- [KC Train Logs](../05-Training/Orch%20Train%20Logs/index.md)
 
 ## Open These In Order
 

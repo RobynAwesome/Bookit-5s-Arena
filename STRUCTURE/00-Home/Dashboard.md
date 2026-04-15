@@ -55,11 +55,11 @@ status: active
 
 - [07-Sessions By Day](../07-Sessions%20By%20Day/index.md) - dated session reconstruction with direct-vs-reconstructed evidence
 - [08-IDEAS AT BIRTH](../08-IDEAS%20AT%20BIRTH/index.md) - incubation-only idea bank with competitor comparison and implementation options
-- [09-ORCH PROGRESSION](../09-ORCH%20PROGRESSION/index.md) - Orch development ladder from observer to co-lead
+- [09-KOPANO CONTEXT PROGRESSION](../09-ORCH%20PROGRESSION/index.md) - Orch development ladder from observer to co-lead
 - [10-SESSION IMPROVEMENTS](../10-SESSION%20IMPROVEMENTS/index.md) - lead discipline, session smoothness, hierarchy, and token doctrine
 - [11-AI HALLUCINATION - CRITICAL](../11-AI%20HALLUCINATION%20-%20CRITICAL/index.md) - permanent critical hallucination audit system
 - [12-PLAN MODE SESSIONS](../12-PLAN%20MODE%20SESSIONS/index.md) - planning archive for plan-mode outputs that should not stay only in chat
-- [Orch Train Logs](../05-Training/Orch%20Train%20Logs/index.md) - successes, failures, hierarchy events, and self-reflection logs
+- [KC Train Logs](../05-Training/Orch%20Train%20Logs/index.md) - successes, failures, hierarchy events, and self-reflection logs
 
 ---
 
@@ -67,7 +67,7 @@ status: active
 
 The core identity and vision for what Orch is.
 
-- [Orch Blueprint](../01-Mission/Orch%20Blueprint.md) — Personality, capabilities, and training specification. Source of truth for orch identity.
+- [KC Blueprint](../01-Mission/Orch%20Blueprint.md) — Personality, capabilities, and training specification. Source of truth for orch identity.
 
 ---
 
@@ -76,12 +76,12 @@ The core identity and vision for what Orch is.
 Where we're going and how we get there.
 
 - [KasiLink Integration Plan](../02-Strategy/KasiLink%20Integration%20Plan.md) — Orch as AI microservice inside KasiLink. Architecture, tool mapping, phase roadmap.
-- [Orch Labs Strategy](../02-Strategy/Orch%20Labs%20Strategy.md) — Google-Labs-style additive layer for South African AI tools.
+- [KC Labs Strategy](../02-Strategy/Orch%20Labs%20Strategy.md) — Google-Labs-style additive layer for South African AI tools.
 - [Open Source Product-Ready AI Top 50](../02-Strategy/Open%20Source%20Product-Ready%20AI%20Top%2050.md) — Research map for free vs premium product capabilities.
 - [Microsoft Contract Strategy](../02-Strategy/Microsoft%20Contract%20Strategy.md) — Azure partnership pitch, service mapping, action items.
 - [SA Startup Week Demo](../Microsoft%20Demo%20Day!/SA%20Startup%20Week%20Demo.md) — Hack Day demo plan, April 15-17, 2026.
 - [Adoption Checklist](../02-Strategy/Adoption%20Checklist.md) — Steps from prototype to external adoption.
-- [Orch Concept And Future Foresight](../02-Strategy/Orch%20Concept%20And%20Future%20Foresight.md) — long-range framing for Orch as an AI-native operating layer.
+- [KC Concept And Future Foresight](../02-Strategy/Orch%20Concept%20And%20Future%20Foresight.md) — long-range framing for Orch as an AI-native operating layer.
 
 ---
 
@@ -121,7 +121,7 @@ Active project coordination and status tracking.
 Data and profiles for training the Orch AI system.
 
 - [Training Index](../05-Training/index.md) — master map for human, AI, and orchestration notes.
-- [Orch Train Logs](../05-Training/Orch%20Train%20Logs/index.md) — active logbook for dev outcomes, hierarchy breaches, token use, and lead self-reflection.
+- [KC Train Logs](../05-Training/Orch%20Train%20Logs/index.md) — active logbook for dev outcomes, hierarchy breaches, token use, and lead self-reflection.
 - [Owner Profile](../05-Training/Owner%20Profile.md) — Robyn's work ethic, communication style, and management patterns.
 - [Robyn Operator Profile - Session 3](../05-Training/Robyn%20Operator%20Profile%20-%20Session%203.md) — current-session operational expectations.
 - [Lead Self Report](../05-Training/Lead%20Self%20Report.md) — Claude Opus 4.6 behavioral audit after MVP sprint.
@@ -143,7 +143,7 @@ Code samples and archived source files.
 - [Open Issues](../06-Reference/Open%20Issues.md) — current blocker ledger.
 - `06-Reference/` — `ci.yml`, `filesystem.py`, `search.py`, `write_file.py`
 - `06-Reference/Archive/` — Original source .txt/.md/.docx files before vault conversion
-- `06-Reference/orch-code-implemtation/` — Reference codebase (Rust + Python)
+- `06-Reference/kopano-context-implementation/` — Reference codebase (Rust + Python)
 
 ---
 
@@ -158,7 +158,7 @@ Code samples and archived source files.
 7. [11-AI HALLUCINATION - CRITICAL](../11-AI%20HALLUCINATION%20-%20CRITICAL/index.md)
 8. [12-PLAN MODE SESSIONS](../12-PLAN%20MODE%20SESSIONS/index.md)
 9. [08-IDEAS AT BIRTH](../08-IDEAS%20AT%20BIRTH/index.md)
-10. [09-ORCH PROGRESSION](../09-ORCH%20PROGRESSION/index.md)
+10. [09-KOPANO CONTEXT PROGRESSION](../09-ORCH%20PROGRESSION/index.md)
 11. [Training Index](../05-Training/index.md)
 
 ---

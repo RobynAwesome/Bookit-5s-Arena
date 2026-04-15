@@ -16,7 +16,7 @@ status: active
 
 ## Files
 
-- [Orch Blueprint](Orch%20Blueprint.md)
+- [KC Blueprint](Orch%20Blueprint.md)
 
 ## Purpose
 

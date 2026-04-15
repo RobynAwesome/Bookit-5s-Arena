@@ -136,7 +136,7 @@ REPORT: Append one update to [[comms-log]]
 - Session reconstruction: [07-Sessions By Day](../07-Sessions%20By%20Day/index.md)
 - Lead/process doctrine: [10-SESSION IMPROVEMENTS](../10-SESSION%20IMPROVEMENTS/index.md)
 - Hallucination governance: [11-AI HALLUCINATION - CRITICAL](../11-AI%20HALLUCINATION%20-%20CRITICAL/index.md)
-- Orch training logs: [Orch Train Logs](../05-Training/Orch%20Train%20Logs/index.md)
+- Orch training logs: [KC Train Logs](../05-Training/Orch%20Train%20Logs/index.md)
 
 ## Security Incident Rule
 

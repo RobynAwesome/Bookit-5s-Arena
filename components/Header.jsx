@@ -133,8 +133,15 @@ const ADMIN_MOBILE_ADVANCED = [
   { href: "/admin/audit",        icon: <FaHistory size={11} className="text-amber-400" />,      label: "Audit Log", comingSoon: true },
 ];
 
+/* ── Route-matching helper ── */
+function isActive(pathname, href) {
+  if (href === "/") return pathname === "/";
+  if (href.includes("#")) return pathname === href.split("#")[0];
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
 const HeaderInner = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { theme, themes, cycleTheme } = useTheme();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -145,6 +152,7 @@ const HeaderInner = () => {
   const activeRole = session?.user?.activeRole || session?.user?.role;
   const isAdmin = activeRole === "admin";
   const isManager = activeRole === "manager";
+  const onManagerRoute = pathname?.startsWith("/manager");
   const hideDesktopSearch = pathname === "/login" || pathname === "/register" || pathname === "/role-select";
   const onAuthScreen = pathname === "/login" || pathname === "/register";
   const requestedMode = searchParams.get("mode");
@@ -167,14 +175,29 @@ const HeaderInner = () => {
     setAdminMoreOpen(false);
   }, [pathname]);
 
-  const navClass = () =>
-    "flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold rounded-lg transition-all uppercase tracking-widest whitespace-nowrap";
+  /* Close mobile menu on route change */
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
-  const mobileClass = () =>
-    "flex items-center gap-2 px-3 py-3 text-sm font-bold rounded-lg transition-all uppercase tracking-widest";
+  const navClass = (href) => {
+    const active = isActive(pathname, href);
+    return `flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold rounded-lg transition-all uppercase tracking-widest whitespace-nowrap ${
+      active
+        ? "text-green-400 bg-green-500/10"
+        : "text-gray-400 hover:text-white hover:bg-gray-800/60"
+    }`;
+  };
+
+  const mobileClass = (href) => {
+    const active = isActive(pathname, href);
+    return `flex items-center gap-2 px-3 py-3 text-sm font-bold rounded-lg transition-all uppercase tracking-widest ${
+      active ? "" : ""
+    }`;
+  };
+
   const [imgError, setImgError] = useState(false);
 
-  // Reset image error state when the session image URL changes (e.g. after upload)
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setImgError(false);
@@ -201,6 +224,34 @@ const HeaderInner = () => {
       document.body.style.touchAction = previousTouchAction || "";
     };
   }, [mobileOpen]);
+
+  /* Hide the global header entirely on manager routes — ManagerNavbar handles it */
+  if (isManager && onManagerRoute) {
+    return null;
+  }
+
+  /* Show a loading skeleton while session is resolving to prevent layout flash */
+  if (status === "loading") {
+    return (
+      <header className="bg-gray-950/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
+        <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-20 items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-20 h-20 rounded-full bg-gray-800 animate-pulse" />
+            </div>
+            <div className="hidden md:flex items-center gap-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-8 w-20 rounded-lg bg-gray-800 animate-pulse" />
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-gray-800 animate-pulse" />
+            </div>
+          </div>
+        </nav>
+      </header>
+    );
+  }
 
   return (
     <header className="bg-gray-950/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
@@ -241,6 +292,7 @@ const HeaderInner = () => {
               <Link
                 key={tab.href}
                 href={tab.href}
+                prefetch={false}
                 className={navClass(tab.href)}
               >
                 <NavIcon>{tab.icon}</NavIcon> {tab.label}
@@ -252,7 +304,7 @@ const HeaderInner = () => {
               <div className="relative">
                 <button
                   onClick={() => setAdminMoreOpen((v) => !v)}
-                  className={`${navClass()} ${adminMoreOpen ? "text-green-400 bg-gray-800" : "text-gray-400 hover:text-white hover:bg-gray-800/60"}`}
+                  className={`${navClass("#more")} ${adminMoreOpen ? "!text-green-400 !bg-gray-800" : ""}`}
                 >
                   <NavIcon><FaCog size={11} className="text-green-400" /></NavIcon> More
                 </button>
@@ -270,6 +322,7 @@ const HeaderInner = () => {
                           <Link
                             key={item.href}
                             href={item.comingSoon ? "#" : item.href}
+                            prefetch={false}
                             onClick={(e) => {
                               if (item.comingSoon) e.preventDefault();
                               else setAdminMoreOpen(false);
@@ -277,7 +330,7 @@ const HeaderInner = () => {
                             className={`flex items-center gap-2.5 px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all ${
                               item.comingSoon
                                 ? "text-gray-600 cursor-not-allowed"
-                                : pathname?.startsWith(item.href)
+                                : isActive(pathname, item.href)
                                   ? "text-green-400 bg-green-500/10"
                                   : "text-gray-300 hover:text-white hover:bg-gray-800/60"
                             }`}
@@ -333,6 +386,7 @@ const HeaderInner = () => {
                 <RoleSwitcher />
                 <Link
                   href="/profile"
+                  prefetch={false}
                   className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-gray-800 transition-all border border-transparent hover:border-gray-800"
                 >
                   <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-green-500 bg-gray-900 flex items-center justify-center">
@@ -463,9 +517,9 @@ const HeaderInner = () => {
                         <Link
                           key={tab.href}
                           href={tab.href}
-                          onClick={() => setMobileOpen(false)}
+                          prefetch={false}
                           className={`${mobileClass(tab.href)} w-full justify-between border ${
-                            pathname === tab.href
+                            isActive(pathname, tab.href)
                               ? "border-green-700 bg-green-500/10 text-white"
                               : "border-gray-800 bg-gray-900/80 text-gray-300 hover:border-gray-700 hover:bg-gray-900"
                           }`}
@@ -485,14 +539,14 @@ const HeaderInner = () => {
                         <Link
                           key={tab.href}
                           href={tab.comingSoon ? "#" : tab.href}
+                          prefetch={false}
                           onClick={(e) => {
                             if (tab.comingSoon) e.preventDefault();
-                            else setMobileOpen(false);
                           }}
                           className={`${mobileClass(tab.href)} w-full justify-between border ${
                             tab.comingSoon
                               ? "border-gray-800/50 bg-gray-900/40 text-gray-600 cursor-not-allowed"
-                              : pathname === tab.href
+                              : isActive(pathname, tab.href)
                                 ? "border-green-700 bg-green-500/10 text-white"
                                 : "border-gray-800 bg-gray-900/80 text-gray-300 hover:border-gray-700 hover:bg-gray-900"
                           }`}
@@ -514,9 +568,9 @@ const HeaderInner = () => {
                       <Link
                         key={tab.href}
                         href={tab.href}
-                        onClick={() => setMobileOpen(false)}
+                        prefetch={false}
                         className={`${mobileClass(tab.href)} w-full justify-between border ${
-                          pathname === tab.href
+                          isActive(pathname, tab.href)
                             ? "border-green-700 bg-green-500/10 text-white"
                             : "border-gray-800 bg-gray-900/80 text-gray-300 hover:border-gray-700 hover:bg-gray-900"
                         }`}
@@ -534,7 +588,7 @@ const HeaderInner = () => {
                   <div className="mt-4 space-y-3 border-t border-gray-800 pt-4">
                     <Link
                       href="/profile"
-                      onClick={() => setMobileOpen(false)}
+                      prefetch={false}
                       className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900/80 px-4 py-3"
                     >
                       <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-green-500 bg-gray-900">
@@ -577,7 +631,6 @@ const HeaderInner = () => {
                     {(!onAuthScreen || authMode !== "login") && (
                       <Link
                         href="/login"
-                        onClick={() => setMobileOpen(false)}
                         className="rounded-2xl border border-gray-800 bg-gray-900/80 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-gray-200"
                       >
                         Login
@@ -586,7 +639,6 @@ const HeaderInner = () => {
                     {(!onAuthScreen || authMode !== "register") && (
                       <Link
                         href="/register"
-                        onClick={() => setMobileOpen(false)}
                         className="rounded-2xl bg-green-600 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-white shadow-[0_0_18px_rgba(34,197,94,0.28)]"
                       >
                         Register

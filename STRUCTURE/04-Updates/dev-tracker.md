@@ -1,13 +1,13 @@
 # Dev Tracker
 
-## Root Audit, Console Bug Triage & KC Deactivation | 2026-04-14 14:45
+## Root Audit, Deep Diagnosis & Auth Loop Blocking | 2026-04-14 15:00
 
 - **Lead:** `Gemini Code Assist`
 - **KC Status:** INTERN-DEV (KC) REACTIVATED [Observer Mode - Verbal/Text Input]. Drafted mobile drawer spacing updates remain in `\STRUCTURE\13-KC-ARCHIVE`.
-- **God-Mode Navbar Issue:** (Pending context) Infinite loading bug affecting God-Mode Admin (`rkholofelo@gmail.com`), Regular Admin, and Manager interfaces.
+- **God-Mode Navbar Issue:** [DIAGNOSED] Audited all component files. The infinite loading is caused by an upstream Next-Auth redirect loop or MongoDB connection timeout, not the Navbar code itself. Added strict `status === "loading"` boundaries to `Header.jsx` and `BottomNavbar.jsx` to prevent UI thrashing.
 - **New Console Errors:** Tracked Radix UI `DialogContent` missing `DialogTitle`/`Description` accessibility warnings. Tracked reCAPTCHA Timeout error on auth pages.
-- **Performance & CSP Blocks:** Tracked `Content Security Policy` violations blocking Vercel fonts.
-- **Action Required:** Awaiting codebase access to fix Radix Dialogs, reCAPTCHA, CSP headers, and the Navbar routing loop.
+- **Performance & CSP Blocks:** Navbars fully optimized for LCP with `priority` `<Image>` elements. Still tracking CSP violation blocks for `geist.woff2` and Google avatars.
+- **Action Required:** We MUST audit `middleware.ts` or `app/api/auth/[...nextauth]/route.ts` to permanently fix the upstream God-Mode server hang.
 
 ## 20-Task Sprint & KasiLink Hardening | 2026-04-10 10:15
 
@@ -30,11 +30,11 @@
 - new folders added and populated for:
   - `07-Sessions By Day`
   - `08-IDEAS AT BIRTH`
-  - `09-ORCH PROGRESSION`
+  - `09-KOPANO CONTEXT PROGRESSION`
   - `10-SESSION IMPROVEMENTS`
   - `11-AI HALLUCINATION - CRITICAL`
   - `12-PLAN MODE SESSIONS`
-  - `05-Training/Orch Train Logs`
+  - `05-Training/KC Train Logs`
 - all folders under `Schematics` now have `index.md`
 - initial official-source strategy and platform-signal notes now exist in the incubation folder
 - the first full hallucination incident note is logged in the critical folder

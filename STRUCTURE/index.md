@@ -46,7 +46,7 @@ status: active
 - [06-Reference](06-Reference/index.md) - archives, imported references, and blocker ledgers
 - [07-Sessions By Day](07-Sessions%20By%20Day/index.md) - dated session reconstruction and evidence trail
 - [08-IDEAS AT BIRTH](08-IDEAS%20AT%20BIRTH/index.md) - incubation-only ideas with research gates
-- [09-ORCH PROGRESSION](09-ORCH%20PROGRESSION/index.md) - Orch capability ladder from observer to co-lead
+- [09-KOPANO CONTEXT PROGRESSION](09-ORCH%20PROGRESSION/index.md) - Orch capability ladder from observer to co-lead
 - [10-SESSION IMPROVEMENTS](10-SESSION%20IMPROVEMENTS/index.md) - lead doctrine, hierarchy control, and token discipline
 - [11-AI HALLUCINATION - CRITICAL](11-AI%20HALLUCINATION%20-%20CRITICAL/index.md) - mandatory hallucination audit system
 - [12-PLAN MODE SESSIONS](12-PLAN%20MODE%20SESSIONS/index.md) - archived plan-mode outputs with date, time, participants, and phase

@@ -1,5 +1,5 @@
 ---
-title: Orch Train Logs Index
+title: KC Train Logs Index
 created: 2026-04-10
 updated: 2026-04-10
 author: Codex
@@ -12,7 +12,7 @@ priority: high
 status: active
 ---
 
-# Orch Train Logs
+# KC Train Logs
 
 > Active training logbook for Orch's future orchestration behavior.
 > This folder captures what the team did well, where it failed, and how those lessons should shape Orch's eventual lead behavior.

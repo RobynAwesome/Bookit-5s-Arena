@@ -1,5 +1,5 @@
 ---
-title: Orch Blueprint
+title: KC Blueprint
 created: 2026-04-05
 updated: 2026-04-05
 tags:
@@ -10,7 +10,7 @@ status: active
 priority: critical
 ---
 
-# Orch Blueprint
+# KC Blueprint
 
 Orch is the internal orchestration and learning layer for KasiLink. It remains the core engine: multi-agent coordination, moderation, memory, auditability, APIs, and deployment surfaces.
 

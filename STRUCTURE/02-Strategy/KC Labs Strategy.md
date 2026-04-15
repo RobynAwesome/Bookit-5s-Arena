@@ -1,5 +1,5 @@
 ---
-title: Orch Labs Strategy
+title: KC Labs Strategy
 created: 2026-04-06
 updated: 2026-04-06
 author: Codex
@@ -12,7 +12,7 @@ priority: critical
 status: active
 ---
 
-# Orch Labs Strategy
+# KC Labs Strategy
 
 > Orch Labs is an added layer on top of orch.
 > orch remains the engine. Orch Labs is the visible experiment studio.

@@ -178,7 +178,7 @@ export default function BottomNavbar() {
     /* Hidden on mobile (sm:flex). Positioned at bottom center */
     <div
       ref={menuRef}
-      className="pointer-events-none fixed bottom-6 left-1/2 z-90 hidden -translate-x-1/2 flex-col items-center sm:flex"
+      className="pointer-events-none fixed bottom-6 left-1/2 z-90 -translate-x-1/2 flex-col items-center flex"
     >
       {/* Expanded dock */}
       <AnimatePresence>

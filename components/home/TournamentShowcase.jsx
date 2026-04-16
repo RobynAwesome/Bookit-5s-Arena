@@ -135,10 +135,10 @@ export default function TournamentShowcase() {
       })
       .catch(() => setLoaded(true));
 
-    fetch("/api/admin/competitions/tournament/fixtures?status=live")
+    fetch("/api/fixtures/tournament?status=live&limit=4")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.fixtures?.length) setLiveFixtures(data.fixtures.slice(0, 4));
+        if (data?.fixtures?.length) setLiveFixtures(data.fixtures);
       })
       .catch(() => {});
   }, []);

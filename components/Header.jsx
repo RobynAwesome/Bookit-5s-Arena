@@ -233,7 +233,7 @@ const HeaderInner = () => {
   /* Show a loading skeleton while session is resolving to prevent layout flash */
   if (status === "loading") {
     return (
-      <header className="bg-gray-950/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
+      <header className="bg-gray-950/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-[100] shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
         <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-20 items-center justify-between">
             <div className="flex items-center gap-3">
@@ -254,7 +254,7 @@ const HeaderInner = () => {
   }
 
   return (
-    <header className="bg-gray-950/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
+    <header className="bg-gray-950/95 backdrop-blur-md border-b border-gray-800 sticky top-0 z-[100] shadow-[0_2px_20px_rgba(0,0,0,0.6)]">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
           {/* ── Logo Container (Centered Content) ── */}

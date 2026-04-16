@@ -1228,8 +1228,12 @@ const BookingsPage = () => {
   };
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (authStatus === "authenticated") {
+      fetchBookings();
+    } else if (authStatus === "unauthenticated") {
+      setLoading(false);
+    }
+  }, [authStatus]);
 
   // Fetch courts
   useEffect(() => {

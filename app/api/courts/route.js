@@ -29,6 +29,10 @@ export async function GET(request) {
       .sort({ sortOrder: 1, createdAt: 1 })
       .lean();
 
+    if (!mine && courts.length === 0) {
+      return NextResponse.json(getFallbackCourts(), { status: 200 });
+    }
+
     const res = NextResponse.json(courts, { status: 200 });
 
     // Public court list changes rarely — cache 60s at edge, serve stale while revalidating

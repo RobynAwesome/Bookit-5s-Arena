@@ -62,7 +62,6 @@ status: active
 ## Biggest Open Blockers
 
 - valid Clerk keys for the wider authenticated rehearsal
-- Atlas allowlist and live Mongo reachability
 - `whatsapp_bridge_configured: false` for the full KasiLink narrative
 - Azure sign-in is still incomplete in the local demo shell
 - Azure OpenAI, App Insights, and hosting env/resource values are still missing

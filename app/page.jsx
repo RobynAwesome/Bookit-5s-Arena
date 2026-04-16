@@ -23,6 +23,9 @@ const getCourts = async () => {
   try {
     await connectDB();
     const data = await Court.find().sort({ sortOrder: 1 }).lean();
+    if (data.length === 0) {
+      return getFallbackCourts();
+    }
     return data.map(doc => ({ 
       ...doc, 
       _id: doc._id.toString(),

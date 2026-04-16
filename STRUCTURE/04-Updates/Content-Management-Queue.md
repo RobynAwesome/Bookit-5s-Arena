@@ -22,8 +22,8 @@ This document reflects the immediate content needs for the Bookit 5s Arena platf
 
 | Group | Item Name | Status | Due Date | Target Page | Notes / Requirements |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Competitions & Tournament** | Write Tournament Registration Guide | To Do | Apr 15 | `/tournament` | Clear step-by-step instructions: how to register a team, payment methods (ZAR 3,000 POP), cutoff deadlines. |
-| **About Page** | Expand Team Bios | To Do | Apr 20 | `/about` | Add 2-3 sentences to round out the back-office and referee profiles for trust acquisition. |
+| **Competitions & Tournament** | Write Tournament Registration Guide | Done | Apr 15 | `/tournament` | Clear step-by-step instructions implemented with Framer Motion. |
+| **About Page** | Expand Team Bios | Done | Apr 20 | `/about` | Bios expanded with 2-3 extra sentences for Robyn and Mashoto. |
 
 ## Strategy Protocol
 - Code implementation for the **Tournament Registration Guide** should leverage existing modern UI components (e.g., `Framer Motion` lists) directly inside `app/tournament/page.jsx` or as an imported component.

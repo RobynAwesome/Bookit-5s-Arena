@@ -24,13 +24,13 @@ const TEAM = [
   {
     name: "Kholofelo Robyn Rababalela",
     role: "Lead Developer",
-    desc: "Full-stack developer behind the Bookit 5s Arena platform. Building the digital experience for Cape Town's premier five-a-side football venue.",
+    desc: "Full-stack developer behind the Bookit 5s Arena platform. Robyn specializes in building high-performance, real-time web applications with a focus on immersive UX and robust backend systems. Her expertise in the Next.js ecosystem ensures that every booking and match update is delivered with lightning-fast low latency.",
     linkedin: "https://linkedin.com",
   },
   {
     name: "Mashoto Bayne Rababalela",
     role: "Founder",
-    desc: "Founder and visionary behind 5s Arena at Hellenic Football Club. Bringing world-class five-a-side football to Milnerton, Cape Town.",
+    desc: "Founder and visionary behind 5s Arena at Hellenic Football Club. With a deep passion for grassroots sports, Mashoto is dedicated to creating professional-grade environments for community athletes. His mission is to bridge the gap between amateur play and professional competition through world-class facilities and high-stakes tournaments.",
     linkedin: "https://linkedin.com",
   },
 ];

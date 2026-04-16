@@ -254,6 +254,84 @@ export default function TournamentPage() {
               </motion.button>
 
               <PlayerShowcase />
+
+              {/* ── Registration Guide ── */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="mt-20 text-left max-w-2xl mx-auto bg-gray-900/50 border border-gray-800 rounded-3xl p-8"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-green-900/40 border border-green-500/50 flex items-center justify-center">
+                    <FaCheck className="text-green-400" size={16} />
+                  </div>
+                  <h2
+                    className="text-xl font-black uppercase tracking-widest text-white"
+                    style={{ fontFamily: "Impact, Arial Black, sans-serif" }}
+                  >
+                    How To Register
+                  </h2>
+                </div>
+
+                <div className="space-y-6">
+                  {[
+                    {
+                      step: "1",
+                      title: "Secure Your Nation",
+                      desc: "Click the 'Register' button above, accept the Terms & Conditions, and select your World Cup nation. Each nation is exclusive and first-come, first-served.",
+                    },
+                    {
+                      step: "2",
+                      title: "Submit Team Details",
+                      desc: "Provide your squad roster (min 5, max 8 players). You can also add up to 3 support staff members (coaches, physios) to your official delegation.",
+                    },
+                    {
+                      step: "3",
+                      title: "Make Payment (POP)",
+                      desc: "The registration fee is ZAR 3,000.00 per team. Payment must be made via EFT. Once paid, upload your Proof of Payment (PDF) in the final step.",
+                    },
+                    {
+                      step: "4",
+                      title: "Verification",
+                      desc: "Our admins will verify your POP within 24 hours. Your nation will then be officially 'Confirmed' in the live standings.",
+                    },
+                  ].map((item, i) => (
+                    <div key={i} className="flex gap-4">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-[10px] font-black text-green-400">
+                        {item.step}
+                      </div>
+                      <div>
+                        <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-1">
+                          {item.title}
+                        </h4>
+                        <p className="text-gray-400 text-xs leading-relaxed">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-gray-800 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mb-1">
+                      Cutoff Deadline
+                    </p>
+                    <p className="text-red-400 text-sm font-bold">
+                      May 15, 2026 · 17:00
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black mb-1">
+                      Registration Fee
+                    </p>
+                    <p className="text-green-400 text-sm font-bold">
+                      R3,000.00 Per Team
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           )}
 

@@ -231,7 +231,7 @@ export default function HelpPage() {
                   >
                     <button
                       onClick={() =>
-                        setOpenFaq(isOpen ? null : `${cat.name}-${i}`)
+                        setOpenFaq(isOpen ? null : `${cat.name}-${_i}`)
                       }
                       className="w-full flex items-center justify-between px-5 py-4 text-left cursor-pointer hover:bg-gray-800/30 transition-colors duration-300 hover:scale-[1.01] active:scale-95 group"
                     >

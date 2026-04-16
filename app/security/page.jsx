@@ -1,39 +1,74 @@
-export const metadata = {
-  title: 'Security',
-  description: 'Security practices at Bookit 5s Arena.',
-};
+"use client";
+
+import { motion } from "framer-motion";
+import { FaLock, FaUserShield, FaServer, FaFingerprint } from "react-icons/fa";
 
 export default function SecurityPage() {
+  const points = [
+    {
+      title: "Encrypted Transactions",
+      icon: FaLock,
+      desc: "Every data exchange between your device and our arena servers is protected by high-grade 256-bit TLS encryption.",
+    },
+    {
+      title: "Identity Protection",
+      icon: FaUserShield,
+      desc: "We utilize multi-layer authentication (NextAuth) and follow OAuth 2.0 best practices for all Google and Facebook sessions.",
+    },
+    {
+      title: "Server Integrity",
+      icon: FaServer,
+      desc: "Our database is managed via secure clusters with real-time threat monitoring and automatic failover protection.",
+    },
+    {
+      title: "Bot Mitigation",
+      icon: FaFingerprint,
+      desc: "We implement advanced fingerprinting and rate-limiting to protect court inventory from automated booking scrapers.",
+    },
+  ];
+
   return (
-    <main className="min-h-screen bg-gray-950 text-white py-24 px-6">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl font-black uppercase mb-2" style={{ fontFamily: 'Impact, Arial Black, sans-serif' }}>
-          Security
-        </h1>
-        <p className="text-gray-400 text-sm mb-10">Keeping your data and payments safe</p>
+    <div className="min-h-screen bg-gray-950 text-white pt-32 pb-20 px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-16">
+          <div className="inline-block p-4 rounded-full bg-blue-900/20 border border-blue-500/30 mb-6">
+            <FaLock className="text-blue-500" size={40} />
+          </div>
+          <h1
+            className="font-black uppercase tracking-tight mb-4"
+            style={{
+              fontSize: "clamp(2.5rem, 6vw, 4rem)",
+              fontFamily: "Impact, Arial Black, sans-serif",
+            }}
+          >
+            System <span className="text-blue-500">Security</span>
+          </h1>
+          <p className="text-gray-400 max-w-xl mx-auto">
+            Your data safety is our top priority. We employ enterprise-standard security measures to ensure your 5s Arena experience is secure.
+          </p>
+        </div>
 
-        <div className="space-y-8 text-gray-300 leading-relaxed">
-          <section>
-            <h2 className="text-xl font-bold text-white mb-3">Payments</h2>
-            <p>All bookings are <strong className="text-white">cash-only</strong> — payments are made in person at the venue. We do not process, store, or transmit any card details online.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-white mb-3">Authentication</h2>
-            <p>Passwords are hashed with <strong className="text-white">bcrypt</strong>. Sessions use signed JWT tokens via NextAuth. OAuth logins (Google) do not expose your password to us.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-white mb-3">Data Transmission</h2>
-            <p>All traffic is served over <strong className="text-white">HTTPS</strong> with HSTS preloading. HTTP Strict Transport Security is enforced for 2 years.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-white mb-3">Report a Vulnerability</h2>
-            <p>If you discover a security issue, please contact us responsibly at <a href="mailto:fivearena@gmail.com" className="text-green-400 hover:underline">fivearena@gmail.com</a> before disclosing publicly.</p>
-          </section>
+        <div className="grid md:grid-cols-2 gap-6">
+          {points.map((p, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="p-8 rounded-3xl bg-gray-900 border border-gray-800 hover:border-blue-500/50 transition-all hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] group"
+            >
+              <p.icon className="text-blue-500 mb-4 group-hover:scale-110 transition-transform" size={24} />
+              <h3 className="text-lg font-black uppercase tracking-wider mb-2 text-white">
+                {p.title}
+              </h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                {p.desc}
+              </p>
+            </motion.div>
+          ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

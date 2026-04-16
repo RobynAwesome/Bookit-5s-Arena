@@ -25,12 +25,6 @@ status: active
 - **Help/FAQ (`/help`)**: Operational. Fixed accordion logic bugs.
 - **Contact Us (`/contact`)**: Operational. Brand new high-fidelity contact form deployed.
 - **Security & Privacy (`/security`, `/privacy`)**: Operational. Legal and technical compliance pages staged.
+- **Pricing Overview (`/pricing`)**: Operational. Tiered pricing comparison live.
 
 ## The Information & Rulebook Layer
-- **About (`/about`)**: Functional. Phase 2 expanded Team Bios for Robyn and Mashoto.
-- **Rules of the Game (`/rules-of-the-game`)**: Fully deployed.
-- **Roadmap (`/roadmap`)**: Functional, but flagged as needing added visual clarity.
-
-## Missing Surfaces (Urgent Setup Required)
-The following foundational business pages are missing:
-1. **Pricing Overview**: A transparent breakdown of court rates.

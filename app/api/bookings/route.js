@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import Court from '@/models/Court';
 import { sendBookingConfirmation } from '@/lib/sendBookingConfirmation';
+import { sendBookingWATip } from '@/lib/integrations/whatsapp';
 import { rateLimit } from '@/lib/rateLimit';
 import { verifyBotRequest } from '@/lib/security/botid';
 import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
@@ -151,7 +152,7 @@ export async function POST(request) {
       paymentStatus: payAtVenue ? 'reserved' : 'unpaid',
     });
 
-    // Send confirmation email (non-blocking — won't fail the booking if email fails)
+    // Send confirmation email (non-blocking)
     try {
         await sendBookingConfirmation({
           to: session.user.email,
@@ -164,6 +165,21 @@ export async function POST(request) {
         });
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);
+    }
+
+    // Phase 4: Send WhatsApp Notification (Non-blocking)
+    if (session.user.phone) {
+        try {
+            await sendBookingWATip({
+              to: session.user.phone,
+              name: session.user.name,
+              courtName: court.name,
+              date,
+              time: start_time
+            });
+        } catch (waError) {
+            console.error('Failed to send WhatsApp notification:', waError);
+        }
     }
 
     return NextResponse.json(booking, { status: 201 });

@@ -19,7 +19,14 @@ status: active
 
 ## Critical Technical Blockers
 
-- *None. Phase 1 fixes resolved the Booking System API Crash and the 0-Courts Data Binding fallback.*
+| Ticket ID | Issue Title | Priority | Status | Page Affected | Fix Date |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **BUG-001** | Booking System API Crash | Critical | Resolved | `/bookings` | Apr 16 |
+| **BUG-002** | Data Binding Zero-State ("0 Courts") | Critical | Resolved | `/` | Apr 16 |
+| **BUG-003** | FAQ Component Accordion Loop | High | Resolved | `/help` | Apr 16 |
+| **PAGE-001** | Missing Contact Us Surface | High | Resolved | `/contact` | Apr 16 |
+| **PAGE-002** | Missing Pricing Surface | High | Resolved | `/pricing` | Apr 16 |
+| **PAGE-003** | Missing Privacy/Security Surface | High | Resolved | `/privacy` | Apr 16 |
 
 ## Product Path Gaps
 

@@ -7,48 +7,52 @@ export const runtime = 'nodejs';
  * SSE endpoint for tournament real-time updates
  * Streams: standings-update, fixture-update, team-update, score-live
  */
-export async function GET() {
+export async function GET(request) {
   const encoder = new TextEncoder();
-  // cleanup lives outside the ReadableStream constructor to avoid TDZ ReferenceError
   let cleanupFn = null;
 
   const stream = new ReadableStream({
     start(controller) {
-      // Send initial connection confirmation
-      controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify({ type: 'connected', timestamp: Date.now() })}\n\n`)
-      );
+      let closed = false;
 
-      // Heartbeat every 30s to keep connection alive
-      const heartbeat = setInterval(() => {
-        try {
-          controller.enqueue(encoder.encode(`: heartbeat\n\n`));
-        } catch {
-          clearInterval(heartbeat);
-        }
-      }, 30000);
-
-      // Subscribe to tournament channel
-      const onEvent = (data) => {
-        try {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
-          );
-        } catch {
-          // Client disconnected — cleanup handled in cancel()
-        }
-      };
-
-      sseEmitter.subscribe('tournament', onEvent);
-
-      // Store cleanup in outer-scope variable (safe — no TDZ issue)
-      cleanupFn = () => {
+      const cleanup = () => {
+        if (closed) return;
+        closed = true;
         clearInterval(heartbeat);
         sseEmitter.unsubscribe('tournament', onEvent);
+        request.signal.removeEventListener('abort', cleanup);
       };
+
+      const safeEnqueue = (payload) => {
+        if (closed) return false;
+
+        try {
+          controller.enqueue(encoder.encode(payload));
+          return true;
+        } catch {
+          cleanup();
+          return false;
+        }
+      };
+
+      const onEvent = (data) => {
+        safeEnqueue(`data: ${JSON.stringify(data)}\n\n`);
+      };
+
+      const heartbeat = setInterval(() => {
+        safeEnqueue(': heartbeat\n\n');
+      }, 30000);
+
+      sseEmitter.subscribe('tournament', onEvent);
+      request.signal.addEventListener('abort', cleanup, { once: true });
+      cleanupFn = cleanup;
+
+      safeEnqueue(
+        `data: ${JSON.stringify({ type: 'connected', timestamp: Date.now() })}\n\n`
+      );
     },
     cancel() {
-      if (cleanupFn) cleanupFn();
+      cleanupFn?.();
     },
   });
 
@@ -57,7 +61,7 @@ export async function GET() {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no', // Disable nginx buffering
+      'X-Accel-Buffering': 'no',
     },
   });
 }

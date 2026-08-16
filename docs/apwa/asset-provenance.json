@@ -1,0 +1,12 @@
+{
+  "schema": "fivesarena.apwa.asset-provenance.v1",
+  "recordedAt": "2026-08-16",
+  "rule": "Existing FiveS Arena brand assets are preservation inputs. APWA/Three.js work may compose around them but must not redraw, recolor or silently replace them.",
+  "assets": [
+    {"path":"public/icons/icon-192x192.png","gitBlobSha":"4853bde8feb424ea67e1eadf8d3141fea0a5f23d","role":"PWA icon"},
+    {"path":"public/icons/icon-512x512.png","gitBlobSha":"77cfb20a14f33acbc563a91ee4b420cf2d73a750","role":"PWA icon"},
+    {"path":"public/icons/icon-maskable-512x512.png","gitBlobSha":"0982e2ce9815fa944503b14f72716cb9e8a06490","role":"PWA maskable icon"},
+    {"path":"public/manifest.json","gitBlobSha":"dca60f67fd207abbefc0ec4f854dffc23b1d8697","role":"PWA manifest baseline"}
+  ],
+  "visualMutationAllowed": false
+}

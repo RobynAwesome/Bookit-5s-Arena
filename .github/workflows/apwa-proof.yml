@@ -1,0 +1,43 @@
+name: APWA Proof Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - forge/issue-27-apwa-proof
+
+permissions:
+  contents: read
+
+jobs:
+  apwa-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Production compiler typecheck
+        run: npm run typecheck
+
+      - name: APWA architecture proof
+        run: npx tsx scripts/validate-apwa-proof.ts
+
+      - name: TypeScript 7 compatibility gate
+        run: npm run typecheck:ts7
+
+      - name: Next.js production build
+        run: npm run build
+
+      - name: Assert public proof route emitted
+        run: |
+          test -d .next
+          grep -R -q 'Adaptive match world' .next/server || grep -R -q 'APWA runtime proof' .next/server

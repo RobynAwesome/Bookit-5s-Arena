@@ -62,6 +62,10 @@ jobs:
         if: always()
         run: npx playwright test --config=playwright.organism.config.ts --grep "province state drives weather and editorial surface without leaving the shell" --reporter=line
 
+      - name: Mobile Progressive Update witness proof
+        if: always()
+        run: npx playwright test --config=playwright.organism.config.ts --grep "province choice becomes a revisioned SWFUS local witness and survives reload" --reporter=line
+
       - name: Mobile touch and overflow proof
         if: always()
         run: npx playwright test --config=playwright.organism.config.ts --grep "province controls retain mobile touch targets and horizontal scroll stays bounded" --reporter=line

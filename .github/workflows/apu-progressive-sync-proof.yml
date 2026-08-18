@@ -1,4 +1,4 @@
-name: APU Progressive Sync Proof
+name: KPGS Progressive Update → SWFUS Proof
 
 on:
   pull_request:
@@ -14,7 +14,6 @@ on:
   push:
     branches:
       - main
-      - feat/apu-progressive-sync-governance
     paths:
       - 'app/api/v1/sync/**'
       - 'lib/offline/**'
@@ -30,11 +29,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: fivesarena-apu-${{ github.workflow }}-${{ github.ref }}
+  group: fivesarena-kpgs-progressive-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  apu-proof:
+  progressive-proof:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -49,10 +48,10 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: APU stage and CRUD unit proof
+      - name: Canonical Progressive Update / SWFUS unit proof
         run: npm run test:apu
 
-      - name: APU → CRUD → SWFUS contract proof
+      - name: Introduction-to-MCP contract conformance receipt
         run: npm run validate:apu-sync
 
       - name: Production compiler typecheck
@@ -61,12 +60,12 @@ jobs:
       - name: Production build integration
         run: npm run build
 
-      - name: Upload APU proof receipt
+      - name: Upload KPGS progressive proof receipt
         if: always()
         continue-on-error: true
         uses: actions/upload-artifact@v6
         with:
-          name: fivesarena-apu-proof-${{ github.sha }}
+          name: fivesarena-kpgs-progressive-proof-${{ github.sha }}
           path: .kpgs/receipts/apu-progressive-sync.json
           if-no-files-found: ignore
           retention-days: 14

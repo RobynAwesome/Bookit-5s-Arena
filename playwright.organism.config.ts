@@ -4,7 +4,7 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3002';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  testMatch: /living-organism-mobile\.spec\.ts/,
+  testMatch: /(living-organism-mobile|progressive-update-vnext)\.spec\.ts/,
   fullyParallel: true,
   forbidOnly: true,
   retries: process.env.CI ? 1 : 0,
@@ -18,26 +18,14 @@ export default defineConfig({
     timezoneId: 'Africa/Johannesburg',
     hasTouch: true,
     isMobile: true,
-    // Deterministic UI tests mock /api/organism/feed. Playwright page.route cannot
-    // reliably intercept requests claimed by a service worker, so SW behavior is
-    // proved separately by the APWA architecture/service-worker contract gate.
     serviceWorkers: 'block',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   projects: [
-    {
-      name: 'android-360',
-      use: { viewport: { width: 360, height: 800 }, deviceScaleFactor: 2 },
-    },
-    {
-      name: 'android-390',
-      use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2.75 },
-    },
-    {
-      name: 'android-430',
-      use: { viewport: { width: 430, height: 932 }, deviceScaleFactor: 3 },
-    },
+    { name: 'android-360', use: { viewport: { width: 360, height: 800 }, deviceScaleFactor: 2 } },
+    { name: 'android-390', use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2.75 } },
+    { name: 'android-430', use: { viewport: { width: 430, height: 932 }, deviceScaleFactor: 3 } },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined

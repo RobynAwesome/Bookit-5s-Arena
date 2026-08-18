@@ -9,6 +9,7 @@ on:
       - 'lib/**'
       - 'public/**'
       - 'tests/e2e/living-organism-mobile.spec.ts'
+      - 'tests/e2e/progressive-update-status.spec.ts'
       - 'playwright.organism.config.ts'
       - 'package.json'
       - 'scripts/validate-living-organism.mjs'
@@ -65,6 +66,10 @@ jobs:
       - name: Mobile Progressive Update witness proof
         if: always()
         run: npx playwright test --config=playwright.organism.config.ts --grep "province choice becomes a revisioned SWFUS local witness and survives reload" --reporter=line
+
+      - name: Mobile Progressive Update status proof
+        if: always()
+        run: npx playwright test --config=playwright.organism.config.ts --grep "pending local witness is visible|canonical severed receipt is shown" --reporter=line
 
       - name: Mobile touch and overflow proof
         if: always()

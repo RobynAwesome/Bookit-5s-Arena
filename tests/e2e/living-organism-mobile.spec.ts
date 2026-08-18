@@ -99,6 +99,11 @@ test('province state drives weather and editorial surface without leaving the sh
     'contract-only',
   );
 
+  const arena = page.locator('[data-football-ready="true"]');
+  await expect(arena).toBeVisible({ timeout: 10_000 });
+  await expect(arena).toContainText('Play ready');
+  await expect(arena).toContainText('Western Cape football pulse');
+
   const gautengResponse = page.waitForResponse(
     (response) =>
       response.url().includes('/api/organism/feed?province=gauteng') &&
@@ -110,6 +115,7 @@ test('province state drives weather and editorial surface without leaving the sh
   await expect(organism).toHaveAttribute('data-province', 'gauteng');
   await expect(page.getByTestId('current-province')).toHaveText('Gauteng');
   await expect(page.getByText('Gauteng football pulse')).toBeVisible({ timeout: 10_000 });
+  await expect(arena).toContainText('Gauteng football pulse');
   await expect(page).toHaveURL(/\/news$/);
   await expectNoHorizontalOverflow(page);
 });
@@ -136,7 +142,7 @@ test('reduced-motion users receive the static organism lane instead of forced Th
 
   const staticLane = page.locator('[data-experience-tier="static"]');
   await expect(staticLane).toBeVisible();
-  await expect(staticLane).toContainText('static lane');
+  await expect(staticLane).toContainText('adaptive static arena');
   await expect(page.locator('canvas')).toHaveCount(0);
 });
 

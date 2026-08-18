@@ -9,6 +9,13 @@ import {
   LOCALITY_STORAGE_KEY,
   type ProvinceSlug,
 } from '@/lib/organism/southAfrica';
+import {
+  applyLocalProgressiveUpdate,
+  LOCALITY_SWFUS_NODE,
+  readLatestProgressiveReceipt,
+  retryProgressiveSync,
+} from '@/lib/kpgs/swfusProgressiveUpdates';
+import type { SwfusReceipt } from '@/lib/kpgs/progressiveUpdateContract';
 
 type LocalitySource = 'arena-default' | 'saved' | 'manual' | 'device-nearest';
 
@@ -42,25 +49,59 @@ export function useArenaLocality() {
   const [provinceSlug, setProvinceSlug] = useState<ProvinceSlug>(DEFAULT_PROVINCE_SLUG);
   const [source, setSource] = useState<LocalitySource>('arena-default');
   const [detecting, setDetecting] = useState(false);
+  const [progressiveReceipt, setProgressiveReceipt] = useState<SwfusReceipt | null>(null);
 
-  const persist = useCallback((nextSlug: ProvinceSlug, nextSource: LocalitySource) => {
-    setProvinceSlug(nextSlug);
-    setSource(nextSource);
+  const witnessProgressiveUpdate = useCallback(
+    (payload: StoredLocality) => {
+      void applyLocalProgressiveUpdate({
+        nodeId: LOCALITY_SWFUS_NODE,
+        data: {
+          provinceSlug: payload.provinceSlug,
+          source: payload.source,
+          updatedAt: payload.updatedAt,
+        },
+      })
+        .then(setProgressiveReceipt)
+        .catch(() => {
+          setProgressiveReceipt((current) =>
+            current
+              ? {
+                  ...current,
+                  accepted: false,
+                  stage: 'witness_isolation',
+                  syncState: 'severed',
+                  reason: 'local progressive witness could not be persisted',
+                  observedAt: new Date().toISOString(),
+                }
+              : null,
+          );
+        });
+    },
+    [],
+  );
 
-    if (typeof window === 'undefined') return;
+  const persist = useCallback(
+    (nextSlug: ProvinceSlug, nextSource: LocalitySource) => {
+      setProvinceSlug(nextSlug);
+      setSource(nextSource);
 
-    const payload: StoredLocality = {
-      provinceSlug: nextSlug,
-      source: nextSource,
-      updatedAt: new Date().toISOString(),
-    };
+      if (typeof window === 'undefined') return;
 
-    try {
-      window.localStorage.setItem(LOCALITY_STORAGE_KEY, JSON.stringify(payload));
-    } catch {}
+      const payload: StoredLocality = {
+        provinceSlug: nextSlug,
+        source: nextSource,
+        updatedAt: new Date().toISOString(),
+      };
 
-    window.dispatchEvent(new CustomEvent(LOCALITY_EVENT, { detail: payload }));
-  }, []);
+      try {
+        window.localStorage.setItem(LOCALITY_STORAGE_KEY, JSON.stringify(payload));
+      } catch {}
+
+      window.dispatchEvent(new CustomEvent(LOCALITY_EVENT, { detail: payload }));
+      witnessProgressiveUpdate(payload);
+    },
+    [witnessProgressiveUpdate],
+  );
 
   useEffect(() => {
     const stored = readStoredLocality();
@@ -68,6 +109,7 @@ export function useArenaLocality() {
       setProvinceSlug(stored.provinceSlug);
       setSource(stored.source === 'arena-default' ? 'saved' : stored.source);
     }
+    setProgressiveReceipt(readLatestProgressiveReceipt(LOCALITY_SWFUS_NODE));
 
     function handleLocality(event: Event) {
       const detail = (event as CustomEvent<StoredLocality>).detail;
@@ -78,18 +120,28 @@ export function useArenaLocality() {
     }
 
     function handleStorage(event: StorageEvent) {
-      if (event.key !== LOCALITY_STORAGE_KEY) return;
-      const next = readStoredLocality();
-      if (!next) return;
-      setProvinceSlug(next.provinceSlug);
-      setSource(next.source);
+      if (event.key === LOCALITY_STORAGE_KEY) {
+        const next = readStoredLocality();
+        if (!next) return;
+        setProvinceSlug(next.provinceSlug);
+        setSource(next.source);
+      }
+      if (event.key === 'fivesarena.swfus.receipts.v1') {
+        setProgressiveReceipt(readLatestProgressiveReceipt(LOCALITY_SWFUS_NODE));
+      }
+    }
+
+    function handleOnline() {
+      void retryProgressiveSync(LOCALITY_SWFUS_NODE).then(setProgressiveReceipt);
     }
 
     window.addEventListener(LOCALITY_EVENT, handleLocality);
     window.addEventListener('storage', handleStorage);
+    window.addEventListener('online', handleOnline);
     return () => {
       window.removeEventListener(LOCALITY_EVENT, handleLocality);
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('online', handleOnline);
     };
   }, []);
 
@@ -136,6 +188,7 @@ export function useArenaLocality() {
     provinceSlug,
     source,
     detecting,
+    progressiveReceipt,
     setProvince,
     detectLocation,
   };

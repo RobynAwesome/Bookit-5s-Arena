@@ -12,6 +12,7 @@
     "typecheck:ts7": "node scripts/typecheck-typescript-7.mjs",
     "typecheck:compare": "npm run typecheck && npm run typecheck:ts7",
     "validate:organism": "node scripts/validate-living-organism.mjs",
+    "validate:progressive-updates": "node scripts/validate-progressive-updates.mjs",
     "test:e2e:organism": "playwright test --config=playwright.organism.config.ts",
     "build:css": "npx tailwindcss -i ./assets/styles/globals.css -o ./public/styles.css --minify",
     "diagnose:atlas": "node --env-file=.env.local scripts/diagnose-atlas-access.mjs",

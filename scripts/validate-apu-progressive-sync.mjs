@@ -71,7 +71,7 @@ requireMarkers("lib/offline/kopanoOfflineQueue.js", [
   "kpgsProgressiveUpdate",
   "progressive_update: progressive",
   "assertSwfusReceiptForUpdate",
-  'status: disposition',
+  "status: disposition",
   '"HELD"',
   '"REJECTED"',
 ]);
@@ -81,7 +81,8 @@ requireMarkers("app/api/v1/sync/route.js", [
   "SWFUS_STAGES",
   "progressive_update",
   "buildSwfusReceipt",
-  "canonical_authority_changed",
+  'authorityEffect: "none"',
+  'stateClass: "pending_proposal"',
   "domain UPDATE/DELETE requires its own governed adapter",
 ]);
 

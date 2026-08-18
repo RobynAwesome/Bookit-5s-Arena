@@ -17,11 +17,12 @@ const POC_EVIDENCE = [
 ];
 
 type LocalitySource = 'arena-default' | 'saved' | 'manual' | 'device-nearest';
+type BlockedQueueStatus = 'held' | 'rejected';
 
 type QueuedLocalityUpdate = {
   update: KpgsProgressiveUpdate;
   queued_at: string;
-  status: 'pending' | 'held' | 'rejected';
+  status: 'pending' | BlockedQueueStatus;
   receipt: KpgsSwfusReceipt | null;
 };
 
@@ -83,6 +84,10 @@ function writeQueue(queue: QueuedLocalityUpdate[]) {
   writeJson(QUEUE_KEY, queue);
 }
 
+function isBlockedStatus(status: QueuedLocalityUpdate['status']): status is BlockedQueueStatus {
+  return status === 'held' || status === 'rejected';
+}
+
 function stageReason(receipt: KpgsSwfusReceipt) {
   const decisive = [...receipt.stages]
     .reverse()
@@ -92,8 +97,11 @@ function stageReason(receipt: KpgsSwfusReceipt) {
 
 export function readLocalityProgressiveStatus(): LocalityProgressiveStatus {
   const queue = readQueue();
-  const blocked = queue.find((item) => item.status === 'held' || item.status === 'rejected');
-  if (blocked?.receipt) {
+  const blocked = queue.find(
+    (item): item is QueuedLocalityUpdate & { status: BlockedQueueStatus; receipt: KpgsSwfusReceipt } =>
+      isBlockedStatus(item.status) && item.receipt !== null,
+  );
+  if (blocked) {
     return {
       state: blocked.status,
       receipt: blocked.receipt,

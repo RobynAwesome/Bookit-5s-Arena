@@ -2,7 +2,7 @@ export const SWFUS_CONTRACT = {
   schema: 'kpgs.swfus.update.v1',
   receiptSchema: 'kpgs.swfus.receipt.v1',
   canonicalRepository: 'RobynAwesome/Introduction-to-MCP',
-  canonicalCommit: '762b306d082c2c5932800406eb75affb1d30bb11',
+  canonicalCommit: 'f7bdd14c624faf155eb01dd38a37ff3d5250e942',
   canonicalPath:
     'governance/kpgs-vnext/adaptive-progressive-updates/swfus-update.schema.json',
 } as const;
@@ -64,7 +64,8 @@ export function isSwfusProgressiveUpdate(
     (candidate.correlationId === null ||
       (typeof candidate.correlationId === 'string' && candidate.correlationId.length > 0)) &&
     (candidate.capabilityLeaseId === null ||
-      (typeof candidate.capabilityLeaseId === 'string' && candidate.capabilityLeaseId.length > 0))
+      (typeof candidate.capabilityLeaseId === 'string' && candidate.capabilityLeaseId.length > 0)) &&
+    (candidate.observedAt === null || typeof candidate.observedAt === 'string')
   );
 }
 
@@ -78,6 +79,11 @@ export function isSwfusReceipt(value: unknown): value is SwfusReceipt {
     ['synced', 'pending_sync', 'severed', 'not_applicable'].includes(
       candidate.syncState || '',
     ) &&
+    (candidate.correlationId === null ||
+      (typeof candidate.correlationId === 'string' && candidate.correlationId.length > 0)) &&
+    (candidate.capabilityLeaseId === null ||
+      (typeof candidate.capabilityLeaseId === 'string' && candidate.capabilityLeaseId.length > 0)) &&
+    (candidate.reason === null || typeof candidate.reason === 'string') &&
     typeof candidate.evidenceHash === 'string' &&
     /^[a-f0-9]{64}$/.test(candidate.evidenceHash) &&
     typeof candidate.observedAt === 'string'

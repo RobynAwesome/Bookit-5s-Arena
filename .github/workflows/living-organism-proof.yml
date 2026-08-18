@@ -12,10 +12,12 @@ on:
       - 'playwright.organism.config.ts'
       - 'package.json'
       - 'scripts/validate-living-organism.mjs'
+      - 'scripts/validate-progressive-updates.mjs'
       - '.github/workflows/living-organism-proof.yml'
   push:
     branches:
       - feat/fivesarena-living-organism
+      - feat/apu-progressive-updates-swfus
 
 permissions:
   contents: read
@@ -37,6 +39,9 @@ jobs:
 
       - name: Living organism contract
         run: npm run validate:organism
+
+      - name: Adaptive Progressive Updates / SWFUS contract
+        run: npm run validate:progressive-updates
 
       - name: Production compiler typecheck
         run: npm run typecheck

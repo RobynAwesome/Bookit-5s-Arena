@@ -36,12 +36,14 @@ requireText(runtime, 'tryCanonicalSync', 'canonical sync attempt missing');
 requireText(runtime, 'readLatestProgressiveReceipt', 'local receipt recovery missing');
 requireText(runtime, "'/api/organism/progressive-updates'", 'progressive sync membrane target missing');
 requireText(runtime, "method: 'POST'", 'progressive update must use non-cacheable POST');
+requireText(runtime, 'if (isSwfusReceipt(payload.receipt))', 'canonical rejection receipt propagation missing');
 
 requireText(adapter, "'/kpgs/progressive-updates'", 'canonical .NET adapter progressive endpoint missing');
-requireText(adapter, "receipt.syncState !== 'synced'", 'adapter must not promote unproven sync');
+requireText(adapter, 'A valid SWFUS rejection is governance evidence', 'canonical rejection is being collapsed into adapter failure');
 requireText(adapter, 'X-KPGS-Capability-Lease', 'capability lease forwarding hook missing');
 
 requireText(route, "body.update.nodeId !== 'fivesarena:locality:province'", 'pilot node allowlist missing');
+requireText(route, "state === 'severed' ? 409", 'canonical severance HTTP mapping missing');
 requireText(route, 'status: 202', 'pending_sync transport state missing');
 requireText(route, "'Cache-Control': 'no-store'", 'progressive update response must be no-store');
 
@@ -53,6 +55,7 @@ requireText(surface, 'data-testid="progressive-update-state"', 'plain-language p
 requireText(surface, 'Saved on this device · sync pending', 'pending sync user copy missing');
 requireText(surface, 'Change visible · recovery save failed', 'local witness failure copy missing');
 requireText(surface, "label: 'Saved'", 'proven synchronized user state missing');
+requireText(surface, 'Could not save · review', 'canonical severance user state missing');
 
 if (!serviceWorker.includes("if (request.method !== 'GET') return;")) {
   failures.push('service worker no longer proves non-GET requests bypass cache');
@@ -69,5 +72,6 @@ if (failures.length) {
 
 console.log('Adaptive Progressive Updates / SWFUS verification PASS');
 console.log('Local witness -> pending_sync -> canonical adapter proof; stale writes fail closed.');
+console.log('Canonical rejection stays severed; transport/unconfigured state stays pending_sync.');
 console.log('Canonical contract: Introduction-to-MCP@f7bdd14c624faf155eb01dd38a37ff3d5250e942.');
 console.log('Pilot scope: fivesarena:locality:province only; transactional surfaces remain outside this membrane.');

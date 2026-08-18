@@ -8,14 +8,18 @@ on:
       - 'hooks/**'
       - 'lib/**'
       - 'public/**'
+      - 'docs/governance/**'
       - 'tests/e2e/living-organism-mobile.spec.ts'
+      - 'tests/e2e/progressive-update-vnext.spec.ts'
       - 'playwright.organism.config.ts'
       - 'package.json'
       - 'scripts/validate-living-organism.mjs'
+      - 'scripts/validate-progressive-update-vnext.mjs'
       - '.github/workflows/living-organism-proof.yml'
   push:
     branches:
       - feat/fivesarena-living-organism
+      - feat/apu-progressive-update-vnext
 
 permissions:
   contents: read
@@ -38,6 +42,9 @@ jobs:
       - name: Living organism contract
         run: npm run validate:organism
 
+      - name: Canonical Progressive Update contract
+        run: npm run validate:progressive-update
+
       - name: Production compiler typecheck
         run: npm run typecheck
 
@@ -56,6 +63,10 @@ jobs:
       - name: Mobile locality switching proof
         if: always()
         run: npx playwright test --config=playwright.organism.config.ts --grep "province state drives weather and editorial surface without leaving the shell" --reporter=line
+
+      - name: Mobile Progressive Update proof
+        if: always()
+        run: npx playwright test --config=playwright.organism.config.ts --grep "offline-style adapter pending|canonical APPLIED receipt|canonical HELD receipt" --reporter=line
 
       - name: Mobile touch and overflow proof
         if: always()

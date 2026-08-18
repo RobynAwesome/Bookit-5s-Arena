@@ -5,9 +5,13 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+  FaCheckCircle,
+  FaCloudUploadAlt,
   FaCrosshairs,
+  FaExclamationTriangle,
   FaMapMarkerAlt,
   FaNewspaper,
+  FaPauseCircle,
   FaSatelliteDish,
   FaShieldAlt,
 } from 'react-icons/fa';
@@ -31,11 +35,7 @@ type OrganismArticle = {
 type AdapterStatus = 'contract-only' | 'ready' | 'degraded';
 
 type OrganismFeed = {
-  locality: {
-    province: string;
-    provinceSlug: string;
-    weatherLabel: string;
-  };
+  locality: { province: string; provinceSlug: string; weatherLabel: string };
   weather: null | {
     temperature: number;
     feelsLike: number;
@@ -47,10 +47,7 @@ type OrganismFeed = {
     footballReady: boolean;
     fetchedAt: string;
   };
-  editorial: {
-    status: 'live' | 'fallback';
-    articles: OrganismArticle[];
-  };
+  editorial: { status: 'live' | 'fallback'; articles: OrganismArticle[] };
   governance?: {
     adapter: {
       configured: boolean;
@@ -69,13 +66,51 @@ function adapterLabel(status: AdapterStatus) {
 }
 
 function adapterClasses(status: AdapterStatus) {
-  if (status === 'ready') {
-    return 'border-green-300/25 bg-green-300/10 text-green-200';
-  }
-  if (status === 'degraded') {
-    return 'border-red-300/20 bg-red-300/8 text-red-200';
-  }
+  if (status === 'ready') return 'border-green-300/25 bg-green-300/10 text-green-200';
+  if (status === 'degraded') return 'border-red-300/20 bg-red-300/8 text-red-200';
   return 'border-amber-300/20 bg-amber-300/8 text-amber-200';
+}
+
+function progressivePresentation(
+  state: 'idle' | 'pending' | 'applied' | 'held' | 'rejected',
+  localError: string | null,
+) {
+  if (localError) {
+    return {
+      label: 'Change visible · recovery save failed',
+      className: 'border-red-300/20 bg-red-300/8 text-red-200',
+      Icon: FaExclamationTriangle,
+    };
+  }
+  if (state === 'pending') {
+    return {
+      label: 'Saved on this device · sync pending',
+      className: 'border-sky-300/20 bg-sky-300/8 text-sky-200',
+      Icon: FaCloudUploadAlt,
+    };
+  }
+  if (state === 'applied') {
+    return {
+      label: 'Saved · governed sync applied',
+      className: 'border-green-300/25 bg-green-300/10 text-green-200',
+      Icon: FaCheckCircle,
+    };
+  }
+  if (state === 'held') {
+    return {
+      label: 'Saved locally · sync held for review',
+      className: 'border-amber-300/20 bg-amber-300/8 text-amber-200',
+      Icon: FaPauseCircle,
+    };
+  }
+  if (state === 'rejected') {
+    return {
+      label: 'Saved locally · governed sync rejected',
+      className: 'border-red-300/20 bg-red-300/8 text-red-200',
+      Icon: FaExclamationTriangle,
+    };
+  }
+  return null;
 }
 
 function StaticOrganismScene() {
@@ -102,6 +137,8 @@ export default function LivingOrganismSurface() {
     provinceSlug,
     source,
     detecting,
+    progressiveStatus,
+    progressiveLocalError,
     setProvince,
     detectLocation,
   } = useArenaLocality();
@@ -112,7 +149,6 @@ export default function LivingOrganismSurface() {
   useEffect(() => {
     let mounted = true;
     const controller = new AbortController();
-
     async function load() {
       setLoading(true);
       try {
@@ -129,7 +165,6 @@ export default function LivingOrganismSurface() {
         if (mounted) setLoading(false);
       }
     }
-
     load();
     return () => {
       mounted = false;
@@ -140,6 +175,7 @@ export default function LivingOrganismSurface() {
   const articles = useMemo(() => feed?.editorial?.articles || [], [feed]);
   const weather = feed?.weather || null;
   const adapterStatus = feed?.governance?.adapter?.status || 'contract-only';
+  const progressive = progressivePresentation(progressiveStatus.state, progressiveLocalError);
 
   return (
     <section
@@ -148,7 +184,6 @@ export default function LivingOrganismSurface() {
       data-province={provinceSlug}
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(57,217,138,0.12),transparent_38%),radial-gradient(circle_at_90%_80%,rgba(245,197,66,0.08),transparent_36%)]" />
-
       <div className="relative mx-auto max-w-7xl">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:items-end">
           <div>
@@ -166,6 +201,17 @@ export default function LivingOrganismSurface() {
               >
                 <FaShieldAlt /> {adapterLabel(adapterStatus)}
               </span>
+              {progressive ? (
+                <span
+                  className={`inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.11em] ${progressive.className}`}
+                  data-testid="progressive-update-state"
+                  data-progressive-state={progressiveLocalError ? 'local-error' : progressiveStatus.state}
+                  title={progressiveLocalError || progressiveStatus.reason || undefined}
+                  aria-live="polite"
+                >
+                  <progressive.Icon /> {progressive.label}
+                </span>
+              ) : null}
             </div>
             <h2 className="max-w-4xl text-4xl font-black uppercase leading-[0.92] tracking-tight text-white sm:text-5xl lg:text-7xl">
               South Africa changes. <span className="text-yellow-400">Five&apos;s Arena reacts.</span>
@@ -178,13 +224,8 @@ export default function LivingOrganismSurface() {
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl">
             <div className="flex flex-col gap-4 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-gray-500">
-                  Current province context
-                </p>
-                <p
-                  className="mt-1 text-xl font-black uppercase text-white"
-                  data-testid="current-province"
-                >
+                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-gray-500">Current province context</p>
+                <p className="mt-1 text-xl font-black uppercase text-white" data-testid="current-province">
                   {province.label}
                 </p>
               </div>
@@ -200,10 +241,7 @@ export default function LivingOrganismSurface() {
           </div>
         </div>
 
-        <div
-          className="mt-8 flex snap-x gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          aria-label="South African province context"
-        >
+        <div className="mt-8 flex snap-x gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="South African province context">
           {SOUTH_AFRICA_PROVINCES.map((item) => (
             <button
               key={item.slug}
@@ -243,15 +281,11 @@ export default function LivingOrganismSurface() {
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                 <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Condition</p>
-                <p className="mt-2 text-sm font-black uppercase text-white">
-                  {weather?.condition || 'Checking'}
-                </p>
+                <p className="mt-2 text-sm font-black uppercase text-white">{weather?.condition || 'Checking'}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                 <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Wind</p>
-                <p className="mt-2 text-xl font-black text-white">
-                  {weather ? `${weather.wind} km/h` : '—'}
-                </p>
+                <p className="mt-2 text-xl font-black text-white">{weather ? `${weather.wind} km/h` : '—'}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
                 <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Football state</p>
@@ -285,9 +319,7 @@ export default function LivingOrganismSurface() {
 
             <div className="mt-6 grid gap-3">
               {loading ? (
-                [0, 1, 2].map((item) => (
-                  <div key={item} className="h-24 animate-pulse rounded-2xl bg-white/5" />
-                ))
+                [0, 1, 2].map((item) => <div key={item} className="h-24 animate-pulse rounded-2xl bg-white/5" />)
               ) : articles.length ? (
                 articles.slice(0, 4).map((article, index) => (
                   <motion.article
@@ -298,22 +330,14 @@ export default function LivingOrganismSurface() {
                     className="rounded-2xl border border-white/8 bg-black/25 p-4"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[9px] font-black uppercase tracking-[0.16em] text-gray-500">
-                        {article.publisher}
-                      </span>
+                      <span className="text-[9px] font-black uppercase tracking-[0.16em] text-gray-500">{article.publisher}</span>
                       {article.localityScore > 0 ? (
-                        <span className="rounded-full bg-green-300/10 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-green-300">
-                          locality match
-                        </span>
+                        <span className="rounded-full bg-green-300/10 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-green-300">locality match</span>
                       ) : null}
                     </div>
-                    <h4 className="mt-2 text-sm font-black leading-5 text-white sm:text-base">
-                      {article.title}
-                    </h4>
+                    <h4 className="mt-2 text-sm font-black leading-5 text-white sm:text-base">{article.title}</h4>
                     {article.summary ? (
-                      <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-400">
-                        {article.summary}
-                      </p>
+                      <p className="mt-2 line-clamp-2 text-xs leading-5 text-gray-400">{article.summary}</p>
                     ) : null}
                   </motion.article>
                 ))

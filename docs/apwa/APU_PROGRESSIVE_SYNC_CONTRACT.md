@@ -1,146 +1,253 @@
-# Five's Arena Adaptive Progressive Update → SWFUS Contract
+# Five's Arena — Adaptive Progressive Updates → #NB → CRUD → SWFUS
 
-**Status:** implementation slice; proof may advance only through the stage actually evidenced.  
-**KPGS authority:** `RobynAwesome/Introduction-to-MCP` / `Kopano-Labs/Introduction-to-MCP` guidance.  
-**Canonical APU source:** `kopano-core/kopano/apu_vector_matrix.py`.  
-**Canonical synchronization source:** `kopano-core/kopano/swfus_engine.py`.
+**Status:** canonical KPGS vNext adapter / non-authoritative synchronization surface.  
+**Canonical authority:** `RobynAwesome/Introduction-to-MCP@6eeb285d0775a7e74ceadc06e32b4068fcfbc595`.  
+**Canonical contract:** `governance/kpgs-vnext/progressive-updates/progressive-update.schema.json`.  
+**Canonical runtime law:** `kopano-core/kopano/swfus_engine.py`.
 
-## Canonical lifecycle preserved
-
-```text
-S0_CONCEPT
-  ↓
-S1_IMPLEMENTED   ← CRUD capability exists
-  ↓
-S2_POC           ← executable local consequence is persisted
-  ↓
-S3_SYNCED        ← SWFUS/server synchronization consequence is observed
-  ↓
-S4_PSO
-  ↓
-S5_GOVERNED
-```
-
-Five's Arena does **not** rename or collapse these stages. The application adapter is intentionally bounded to `S1 → S2 → S3`.
-
-`S4_PSO` and `S5_GOVERNED` require separate evidence and are not emitted by `/api/v1/sync`.
-
-## Why this sits beside the Living Organism APWA work
-
-The existing Living Organism runtime adapts presentation and compute to the current session: province context, data truth, weather, football readiness, and the `full | balanced | lite | static` immersive lane.
-
-Adaptive Progressive Update governance solves a different problem: **how a mutation survives degraded connectivity and proves its own progression without being silently promoted.**
+Five's Arena adapts the canonical contract to its existing live Adaptive PWA. It does **not** create a second SWFUS meaning and it does not rewrite the booking product around governance terminology.
 
 ```text
-LIVE USER ACTION
-    ↓
-APU S1_IMPLEMENTED
-    ↓
-CRUD / local deterministic mutation semantics
-    ↓
-IndexedDB queue transaction
-    ↓
-APU S2_POC receipt
-    ↓
-existing /api/v1/sync transport
-    ↓
-server idempotency + exact-content hash
-    ↓
-SWFUS persistence receipt
-    ↓
-APU S3_SYNCED
+Adaptive Progressive Updates (APU)
+        ↓
+Progressive Update
+        ↓
+#NB
+        ↓
+bounded CRUD proposal
+        ↓
+SWFUS
+State-Wide Framework Universal Synchronization
 ```
 
-The adaptive scene never receives authority over booking, payment, account, authentication, or administrative mutations.
+`#NB` is preserved literally. This adapter does not invent an expansion.
 
-## Five's Arena APU envelope
+## Canonical law
 
-Schema: `fivesarena.apu.progressive-update.v1`
+> **CRUD changes bounded state. SWFUS aligns governed system reality. Synchronization is not authority.**
+
+For Five's Arena that means the offline synchronization endpoint may persist and synchronize a **pending proposal record**. It does not thereby prove that a booking changed, a payment settled, an account mutated, or an administrative action became canonical.
+
+```text
+SYNCED != DOMAIN WRITE APPLIED
+AVAILABILITY != AUTHORITY
+TRANSPORT != AUTHORITY
+PROJECTION != CANONICAL BUSINESS TRUTH
+```
+
+## Canonical eight-stage receipt
+
+Every canonical request is accounted for in this order:
+
+```text
+1. Telemetry
+2. Classification
+3. Routing
+4. Protocol Selection
+5. Invariant Audit
+6. POC / FOC Check
+7. State Update
+8. Distribution
+```
+
+A held or rejected update still returns the full ordered receipt. Stages after the stopping gate are `NOT_REACHED`; they do not silently disappear.
+
+### 1 — Telemetry
+
+The request binds:
+
+- `update_id`;
+- `node_id`;
+- CRUD operation;
+- `idempotency_key`.
+
+Five's Arena also requires the existing `X-Idempotency-Key` HTTP header to equal the canonical `idempotency_key` field.
+
+Exact replay returns the existing persisted result. Reusing the same key for different content is a conflict, not a second mutation.
+
+### 2 — Classification
+
+The browser queue uses:
+
+```text
+lane = fivesarena.offline-sync
+state_class = pending_proposal
+authority_effect = none
+```
+
+APU remains a bounded adaptive signal:
+
+- `GREEN` — may proceed to proof gates;
+- `YELLOW` — HOLD;
+- `RED` — REJECT;
+- `UNSPECIFIED` — no signal is fabricated; explicit POC evidence is still required.
+
+New queue writes default to `UNSPECIFIED`, not manufactured GREEN.
+
+### 3 — Routing
+
+Every update carries an explicit context route such as:
+
+```text
+fivesarena.booking.offline-sync
+fivesarena.payment.offline-sync
+```
+
+Routing is required before any synchronized proposal is persisted.
+
+### 4 — Protocol Selection
+
+New browser queue writes declare:
+
+```text
+FIVESARENA_OFFLINE_SYNC_V1
+```
+
+The generic endpoint is intentionally narrow. It admits `CREATE` records for offline proposals. It does **not** pretend to execute authoritative booking/payment `UPDATE` or `DELETE` operations. Those require their own governed domain adapters and receipts.
+
+### 5 — Invariant Audit
+
+The canonical envelope preserves:
+
+- `authority_effect = none`;
+- `boundary_marker = #NB`;
+- `invariant_passed = true`;
+- finite/valid version metadata where supplied.
+
+### 6 — POC / FOC Check
+
+Mutating canonical requests require:
+
+```text
+poc_validated = true
+foc_detected = false
+evidence_refs.length >= 1
+```
+
+The browser's successful IndexedDB queue transaction is the bounded POC for **replayable offline proposal persistence**, represented by an evidence URI such as:
+
+```text
+queue://indexeddb/<idempotency-key>
+```
+
+It is not proof of the eventual domain write.
+
+### 7 — State Update
+
+`POST /api/v1/sync` persists the non-authoritative proposal record and its canonical receipt metadata in MongoDB.
+
+For this adapter:
+
+```text
+CREATE proposal record = supported
+READ observation = canonical contract shape supported
+UPDATE domain resource = not claimed here
+DELETE domain resource = not claimed here
+```
+
+The application keeps authoritative booking/payment consequences behind their existing domain-specific services.
+
+### 8 — Distribution
+
+Only an admitted `APPLIED` proposal returns:
 
 ```json
 {
-  "schema": "fivesarena.apu.progressive-update.v1",
-  "update_id": "booking:apu:example-001",
-  "resource": "booking",
-  "resource_id": "booking-001",
-  "operation": "update",
-  "base_version": 4,
-  "stage": "S1_IMPLEMENTED",
-  "receipts": []
+  "schema": "kpgs.swfus.receipt.v1",
+  "disposition": "APPLIED",
+  "synchronized": true,
+  "canonical_authority_changed": false,
+  "boundary_marker": "#NB"
 }
 ```
 
-CRUD operations are `create | read | update | delete`.
+The browser deletes the queued proposal only after it validates:
 
-`base_version` is carried as provenance for resource-specific adapters. The generic sync endpoint does **not** claim that it has performed optimistic domain-write conflict checking merely because this field exists. A future resource adapter must enforce that comparison before claiming domain mutation safety.
+- canonical SWFUS receipt schema;
+- all eight stages in canonical order;
+- matching `update_id`, `node_id`, operation and evidence refs;
+- `disposition = APPLIED`;
+- `synchronized = true`;
+- `canonical_authority_changed = false`.
 
-## Proof transitions
+`HELD` and `REJECTED` remain visible local queue states rather than being retried or erased as successful syncs.
 
-### `S1_IMPLEMENTED → S2_POC`
+## Canonical wire contract
 
-All **new browser-queued events** are progressively wrapped by `enqueueOfflineEvent()` by default. The queue derives a stable update identity from the existing event type + idempotency key and models the queued item as creation of a bounded `<event-type>-intent` resource.
+Schema: `kpgs.progressive-update.v1`
 
-A caller may supply a more specific S1 APU envelope when it has stronger resource semantics. Either way, the existing IndexedDB queue remains the only browser persistence mechanism; no second offline transport is created.
-
-A successful queue transaction appends a `crud-local-persistence` receipt and stores the envelope at `S2_POC`.
-
-### `S2_POC → S3_SYNCED`
-
-`POST /api/v1/sync` accepts only `S2_POC` APU envelopes. It:
-
-1. validates the APU schema and CRUD operation;
-2. includes the exact APU envelope in the idempotency content hash;
-3. preserves existing `X-Idempotency-Key` semantics;
-4. persists the event and typed APU receipt;
-5. appends a `swfus-server-persistence` receipt;
-6. returns the server-authored `S3_SYNCED` envelope.
-
-The browser queue refuses to delete an APU record unless the response contains a matching `update_id` at `S3_SYNCED`. This prevents an older or partially deployed sync endpoint from accidentally being interpreted as proof of synchronization.
-
-## Backwards compatibility
-
-The HTTP APU envelope remains optional so existing direct sync clients and already-persisted legacy events keep their prior behavior.
-
-The browser migration is additive and forward-moving:
-
-```text
-legacy persisted/direct event without apu
-    → existing sync behavior
-
-new browser queue event
-    → default S1 APU wrapper
-    → IndexedDB S2 receipt
-    → SWFUS S3 receipt
-
-explicit APU-aware caller
-    → caller-specific S1 resource semantics
-    → IndexedDB S2 receipt
-    → SWFUS S3 receipt
+```json
+{
+  "schema": "kpgs.progressive-update.v1",
+  "update_id": "fivesarena:booking:example-001",
+  "node_id": "fivesarena:booking:booking-001",
+  "operation": "CREATE",
+  "lane": "fivesarena.offline-sync",
+  "context_route": "fivesarena.booking.offline-sync",
+  "protocol": "FIVESARENA_OFFLINE_SYNC_V1",
+  "idempotency_key": "booking:example-001",
+  "value": {
+    "event_type": "booking",
+    "resource_id": "booking-001"
+  },
+  "apu_status": "UNSPECIFIED",
+  "poc_validated": true,
+  "foc_detected": false,
+  "invariant_passed": true,
+  "authority_effect": "none",
+  "state_class": "pending_proposal",
+  "evidence_refs": [
+    "queue://indexeddb/booking:example-001"
+  ],
+  "correlation_id": "offline-sync:booking:example-001",
+  "source": "fivesarena-offline-queue",
+  "expected_version": null,
+  "boundary_marker": "#NB"
+}
 ```
 
-## What S3 proves — and what it does not
+## Legacy Five's Arena envelope
 
-`S3_SYNCED` proves that the exact idempotent progressive-update proposal was persisted by the Five's Arena synchronization boundary.
+The former application-specific schema:
 
-It does **not** by itself prove:
+```text
+fivesarena.apu.progressive-update.v1
+S0_CONCEPT → S1_IMPLEMENTED → S2_POC → S3_SYNCED → S4_PSO → S5_GOVERNED
+```
 
-- a domain booking/payment mutation was applied;
-- a payment settled;
-- a remote provider accepted a write;
-- PSO operationalization completed;
-- KPGS governance promotion completed.
+is **not canonical KPGS vNext**.
 
-Those consequences require their own adapters and receipts.
+It remains readable only as a migration source for already-persisted browser/server evidence. New writes use `kpgs.progressive-update.v1`; new server proof uses `kpgs.swfus.receipt.v1`.
+
+A legacy `S2_POC` browser record may be converted into a canonical `pending_proposal` while preserving the old receipt IDs as provenance. The migration does not turn the legacy stage names into KPGS authority.
+
+## Existing live APWA remains intact
+
+This is an **ADAPT_EXISTING** change.
+
+Five's Arena keeps its existing:
+
+- Next.js application and user journeys;
+- province-aware/live context runtime;
+- `full | balanced | lite | static` immersive capability behavior;
+- IndexedDB degraded-mode queue;
+- MongoDB sync boundary;
+- booking/payment/account authority separation.
+
+The progressive update contract sits beneath that experience so the live UI can remain simple while state movement is inspectable.
+
+The same architectural pattern is used by the Kopano Labs Adaptive Player: local adaptive telemetry does not become authored state, the browser does not mint SWFUS receipts, and synchronized projections never claim canonical authority.
 
 ## Hard laws
 
 ```text
-IMPLEMENTED != POC
-POC != SYNCED
-SYNCED != DOMAIN WRITE APPLIED
-SYNCED != PSO
-SYNCED != GOVERNED
-CLIENT MAY NOT SELF-CLAIM S3_SYNCED
+APU SIGNAL != POC
+POC != DOMAIN WRITE
+QUEUED != SYNCHRONIZED
+SYNCHRONIZED != CANONICAL AUTHORITY
+CLIENT MAY NOT MINT SWFUS RECEIPTS
+HELD != APPLIED
+REJECTED != APPLIED
 IDEMPOTENCY KEY REUSE WITH DIFFERENT CONTENT => CONFLICT
-OLD SERVER RESPONSE WITHOUT APU RECEIPT => NO APU QUEUE DELETION
+OLD S0-S5 ADAPTER != CANONICAL KPGS VNEXT
 ```

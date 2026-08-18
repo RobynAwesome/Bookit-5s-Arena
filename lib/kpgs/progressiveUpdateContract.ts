@@ -2,13 +2,13 @@ export const SWFUS_CONTRACT = {
   schema: 'kpgs.swfus.update.v1',
   receiptSchema: 'kpgs.swfus.receipt.v1',
   canonicalRepository: 'RobynAwesome/Introduction-to-MCP',
-  canonicalCommit: '689f9bc689be5d4fa216a887aee79a5168c63fd2',
+  canonicalCommit: '762b306d082c2c5932800406eb75affb1d30bb11',
   canonicalPath:
     'governance/kpgs-vnext/adaptive-progressive-updates/swfus-update.schema.json',
 } as const;
 
 export type SwfusAction = 'CREATE' | 'READ' | 'UPDATE' | 'DELETE';
-export type SwfusSyncState = 'synced' | 'pending_sync' | 'severed';
+export type SwfusSyncState = 'synced' | 'pending_sync' | 'severed' | 'not_applicable';
 export type SwfusStage =
   | 'sovereign_ingestion'
   | 'witness_isolation'
@@ -62,9 +62,9 @@ export function isSwfusProgressiveUpdate(
       (Number.isInteger(candidate.expectedRevision) &&
         Number(candidate.expectedRevision) >= 0)) &&
     (candidate.correlationId === null ||
-      typeof candidate.correlationId === 'string') &&
+      (typeof candidate.correlationId === 'string' && candidate.correlationId.length > 0)) &&
     (candidate.capabilityLeaseId === null ||
-      typeof candidate.capabilityLeaseId === 'string')
+      (typeof candidate.capabilityLeaseId === 'string' && candidate.capabilityLeaseId.length > 0))
   );
 }
 
@@ -75,7 +75,9 @@ export function isSwfusReceipt(value: unknown): value is SwfusReceipt {
     candidate.schema === SWFUS_CONTRACT.receiptSchema &&
     typeof candidate.nodeId === 'string' &&
     typeof candidate.accepted === 'boolean' &&
-    ['synced', 'pending_sync', 'severed'].includes(candidate.syncState || '') &&
+    ['synced', 'pending_sync', 'severed', 'not_applicable'].includes(
+      candidate.syncState || '',
+    ) &&
     typeof candidate.evidenceHash === 'string' &&
     /^[a-f0-9]{64}$/.test(candidate.evidenceHash) &&
     typeof candidate.observedAt === 'string'

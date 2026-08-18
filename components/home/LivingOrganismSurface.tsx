@@ -78,18 +78,24 @@ function adapterClasses(status: AdapterStatus) {
   return 'border-amber-300/20 bg-amber-300/8 text-amber-200';
 }
 
-function StaticOrganismScene() {
+function StaticOrganismScene({ provinceLabel }: { provinceLabel: string }) {
   return (
     <div
-      className="grid min-h-64 place-items-center rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_center,rgba(57,217,138,0.18),rgba(4,6,10,0.96)_68%)] p-6 text-center"
+      className="relative grid min-h-64 place-items-center overflow-hidden rounded-[2rem] border border-white/10 bg-[#050908] p-6 text-center"
       data-experience-tier="static"
     >
-      <div>
+      <div className="pointer-events-none absolute left-1/2 top-1/2 aspect-[1.62/1] w-[78%] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/30 bg-green-950/35">
+        <div className="absolute inset-y-0 left-1/2 border-l border-white/25" />
+        <div className="absolute left-1/2 top-1/2 aspect-square h-[30%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
+        <div className="absolute inset-y-[24%] left-0 w-[18%] border-y border-r border-white/20" />
+        <div className="absolute inset-y-[24%] right-0 w-[18%] border-y border-l border-white/20" />
+      </div>
+      <div className="relative z-10 max-w-sm rounded-2xl border border-white/10 bg-black/70 p-4 backdrop-blur">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-green-300">
-          Adaptive organism · static lane
+          {provinceLabel} · adaptive static arena
         </p>
         <p className="mt-3 text-sm leading-6 text-gray-300">
-          Province context stays live while motion-heavy 3D rendering is disabled for this preference or capability state.
+          Locality and football state remain available without forcing WebGL or continuous motion.
         </p>
       </div>
     </div>
@@ -154,7 +160,7 @@ export default function LivingOrganismSurface() {
           <div>
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <span className="inline-flex items-center gap-2 rounded-full border border-green-400/20 bg-green-400/8 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-green-300">
-                <FaSatelliteDish /> Living Organism
+                <FaSatelliteDish /> Living Arena
               </span>
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
                 {source.replaceAll('-', ' ')}
@@ -168,10 +174,10 @@ export default function LivingOrganismSurface() {
               </span>
             </div>
             <h2 className="max-w-4xl text-4xl font-black uppercase leading-[0.92] tracking-tight text-white sm:text-5xl lg:text-7xl">
-              South Africa changes. <span className="text-yellow-400">Five&apos;s Arena reacts.</span>
+              South Africa changes. <span className="text-yellow-400">The pitch reacts.</span>
             </h2>
             <p className="mt-5 max-w-3xl text-sm leading-7 text-gray-300 sm:text-base">
-              One governed province state now drives weather, editorial relevance and the adaptive visual layer. The user stays inside the Five&apos;s Arena shell while the blog/news organs feed the experience behind it.
+              Province, weather and local football intelligence now enter the arena itself. The field is the interface: capable devices receive the spatial world, constrained devices keep the same governed state without paying the WebGL cost.
             </p>
           </div>
 
@@ -222,15 +228,20 @@ export default function LivingOrganismSurface() {
           ))}
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
           <div className="grid gap-4">
             {prefersReducedMotion !== false ? (
-              <StaticOrganismScene />
+              <StaticOrganismScene provinceLabel={province.label} />
             ) : (
               <LocalityScene
                 provinceSlug={provinceSlug}
                 weatherCode={weather?.weatherCode ?? null}
                 temperature={weather?.temperature ?? null}
+                wind={weather?.wind ?? null}
+                condition={weather?.condition ?? null}
+                footballReady={weather?.footballReady ?? false}
+                headline={articles[0]?.title ?? null}
+                onProvinceSelect={setProvince}
               />
             )}
 
@@ -272,7 +283,7 @@ export default function LivingOrganismSurface() {
                   {province.label} football intelligence
                 </h3>
                 <p className="mt-2 text-xs leading-6 text-gray-500">
-                  Blog organ first; South African football feed is the governed fallback until the editorial API contract answers.
+                  The strongest locality match is projected into the arena scoreboard; the full governed feed remains here for reading and verification.
                 </p>
               </div>
               <Link

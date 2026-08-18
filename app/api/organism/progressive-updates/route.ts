@@ -13,6 +13,8 @@ type RequestBody = {
   localReceipt?: SwfusReceipt | null;
 };
 
+const noStore = { 'Cache-Control': 'no-store' };
+
 export async function POST(request: Request) {
   let body: RequestBody;
   try {
@@ -20,14 +22,14 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: 'invalid-json', syncState: 'severed' },
-      { status: 400, headers: { 'Cache-Control': 'no-store' } },
+      { status: 400, headers: noStore },
     );
   }
 
   if (!isSwfusProgressiveUpdate(body.update)) {
     return NextResponse.json(
       { error: 'invalid-progressive-update-contract', syncState: 'severed' },
-      { status: 422, headers: { 'Cache-Control': 'no-store' } },
+      { status: 422, headers: noStore },
     );
   }
 
@@ -37,24 +39,34 @@ export async function POST(request: Request) {
   if (body.update.nodeId !== 'fivesarena:locality:province') {
     return NextResponse.json(
       { error: 'node-not-authorized-for-organism-pilot', syncState: 'severed' },
-      { status: 403, headers: { 'Cache-Control': 'no-store' } },
+      { status: 403, headers: noStore },
     );
   }
 
   const result = await syncKpgsProgressiveUpdate(body.update);
   if (result.receipt) {
+    const receipt = result.receipt;
+    const state =
+      !receipt.accepted || receipt.syncState === 'severed'
+        ? 'severed'
+        : receipt.syncState === 'synced'
+          ? 'synced'
+          : receipt.syncState;
+    const status = state === 'severed' ? 409 : state === 'synced' ? 200 : 202;
+
     return NextResponse.json(
       {
         schema: 'fivesarena.progressive-update-sync.v1',
-        state: 'synced',
-        receipt: result.receipt,
+        state,
+        receipt,
+        reason: result.reason,
         adapter: {
           configured: result.configured,
           status: result.adapterStatus,
           checkedAt: result.checkedAt,
         },
       },
-      { status: 200, headers: { 'Cache-Control': 'no-store' } },
+      { status, headers: noStore },
     );
   }
 
@@ -72,6 +84,6 @@ export async function POST(request: Request) {
         checkedAt: result.checkedAt,
       },
     },
-    { status: 202, headers: { 'Cache-Control': 'no-store' } },
+    { status: 202, headers: noStore },
   );
 }

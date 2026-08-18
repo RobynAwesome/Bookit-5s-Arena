@@ -116,49 +116,45 @@ export async function syncKpgsProgressiveUpdate(
       body: JSON.stringify(update),
     });
 
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const payload = (await response.json()) as unknown;
+      const receipt = isSwfusReceipt(payload)
+        ? payload
+        : payload && typeof payload === 'object' && 'receipt' in payload
+          ? (payload as { receipt?: unknown }).receipt
+          : null;
+
+      if (isSwfusReceipt(receipt)) {
+        // A valid SWFUS rejection is governance evidence, not an adapter outage.
+        return {
+          configured: true,
+          adapterStatus: 'ready',
+          receipt,
+          reason:
+            receipt.accepted && receipt.syncState === 'synced'
+              ? null
+              : receipt.reason || `canonical SWFUS returned ${receipt.syncState}`,
+          checkedAt,
+        };
+      }
+    }
+
     if (!response.ok) {
       return {
         configured: true,
         adapterStatus: 'degraded',
         receipt: null,
-        reason: `canonical adapter rejected/failed progressive update with HTTP ${response.status}`,
-        checkedAt,
-      };
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      return {
-        configured: true,
-        adapterStatus: 'degraded',
-        receipt: null,
-        reason: 'canonical adapter returned a non-JSON progressive update response',
-        checkedAt,
-      };
-    }
-
-    const payload = (await response.json()) as unknown;
-    const receipt = isSwfusReceipt(payload)
-      ? payload
-      : payload && typeof payload === 'object' && 'receipt' in payload
-        ? (payload as { receipt?: unknown }).receipt
-        : null;
-
-    if (!isSwfusReceipt(receipt) || !receipt.accepted || receipt.syncState !== 'synced') {
-      return {
-        configured: true,
-        adapterStatus: 'degraded',
-        receipt: null,
-        reason: 'canonical adapter did not return an accepted synced SWFUS receipt',
+        reason: `canonical adapter failed progressive update without a valid SWFUS receipt (HTTP ${response.status})`,
         checkedAt,
       };
     }
 
     return {
       configured: true,
-      adapterStatus: 'ready',
-      receipt,
-      reason: null,
+      adapterStatus: 'degraded',
+      receipt: null,
+      reason: 'canonical adapter returned no valid SWFUS receipt',
       checkedAt,
     };
   } catch {

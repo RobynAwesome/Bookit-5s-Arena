@@ -82,7 +82,14 @@ function adapterClasses(status: AdapterStatus) {
   return 'border-amber-300/20 bg-amber-300/8 text-amber-200';
 }
 
-function progressiveState(receipt: SwfusReceipt | null) {
+function progressiveState(receipt: SwfusReceipt | null, error: string | null) {
+  if (error) {
+    return {
+      label: 'Change visible · recovery save failed',
+      className: 'border-red-300/20 bg-red-300/8 text-red-200',
+      icon: FaExclamationTriangle,
+    };
+  }
   if (!receipt) return null;
   if (!receipt.accepted || receipt.syncState === 'severed') {
     return {
@@ -130,6 +137,7 @@ export default function LivingOrganismSurface() {
     source,
     detecting,
     progressiveReceipt,
+    progressiveError,
     setProvince,
     detectLocation,
   } = useArenaLocality();
@@ -168,7 +176,7 @@ export default function LivingOrganismSurface() {
   const articles = useMemo(() => feed?.editorial?.articles || [], [feed]);
   const weather = feed?.weather || null;
   const adapterStatus = feed?.governance?.adapter?.status || 'contract-only';
-  const updateState = progressiveState(progressiveReceipt);
+  const updateState = progressiveState(progressiveReceipt, progressiveError);
 
   return (
     <section
@@ -199,8 +207,8 @@ export default function LivingOrganismSurface() {
                 <span
                   className={`inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] ${updateState.className}`}
                   data-testid="progressive-update-state"
-                  data-sync-state={progressiveReceipt?.syncState}
-                  title={progressiveReceipt?.reason || undefined}
+                  data-sync-state={progressiveError ? 'local-error' : progressiveReceipt?.syncState}
+                  title={progressiveError || progressiveReceipt?.reason || undefined}
                   aria-live="polite"
                 >
                   <updateState.icon /> {updateState.label}

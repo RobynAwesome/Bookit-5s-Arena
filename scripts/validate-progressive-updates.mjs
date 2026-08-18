@@ -1,12 +1,13 @@
 import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-const [contract, runtime, adapter, route, localityHook, serviceWorker] = await Promise.all([
+const [contract, runtime, adapter, route, localityHook, surface, serviceWorker] = await Promise.all([
   read('lib/kpgs/progressiveUpdateContract.ts'),
   read('lib/kpgs/swfusProgressiveUpdates.ts'),
   read('lib/kpgs/domainAdapterClient.ts'),
   read('app/api/organism/progressive-updates/route.ts'),
   read('hooks/useArenaLocality.ts'),
+  read('components/home/LivingOrganismSurface.tsx'),
   read('public/sw.js'),
 ]);
 
@@ -46,6 +47,12 @@ requireText(route, "'Cache-Control': 'no-store'", 'progressive update response m
 
 requireText(localityHook, 'applyLocalProgressiveUpdate', 'locality update is not witnessed through SWFUS');
 requireText(localityHook, "window.addEventListener('online'", 'reconnect retry hook missing');
+requireText(localityHook, 'progressiveError', 'local witness failure state is not surfaced');
+
+requireText(surface, 'data-testid="progressive-update-state"', 'plain-language progressive update state missing');
+requireText(surface, 'Saved on this device · sync pending', 'pending sync user copy missing');
+requireText(surface, 'Change visible · recovery save failed', 'local witness failure copy missing');
+requireText(surface, "label: 'Saved'", 'proven synchronized user state missing');
 
 if (!serviceWorker.includes("if (request.method !== 'GET') return;")) {
   failures.push('service worker no longer proves non-GET requests bypass cache');

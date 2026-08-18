@@ -50,6 +50,7 @@ export function useArenaLocality() {
   const [source, setSource] = useState<LocalitySource>('arena-default');
   const [detecting, setDetecting] = useState(false);
   const [progressiveReceipt, setProgressiveReceipt] = useState<SwfusReceipt | null>(null);
+  const [progressiveError, setProgressiveError] = useState<string | null>(null);
 
   const witnessProgressiveUpdate = useCallback(
     (payload: StoredLocality) => {
@@ -61,19 +62,13 @@ export function useArenaLocality() {
           updatedAt: payload.updatedAt,
         },
       })
-        .then(setProgressiveReceipt)
+        .then((receipt) => {
+          setProgressiveReceipt(receipt);
+          setProgressiveError(null);
+        })
         .catch(() => {
-          setProgressiveReceipt((current) =>
-            current
-              ? {
-                  ...current,
-                  accepted: false,
-                  stage: 'witness_isolation',
-                  syncState: 'severed',
-                  reason: 'local progressive witness could not be persisted',
-                  observedAt: new Date().toISOString(),
-                }
-              : null,
+          setProgressiveError(
+            'This preference changed for the current view, but its local recovery receipt could not be stored.',
           );
         });
     },
@@ -95,7 +90,9 @@ export function useArenaLocality() {
 
       try {
         window.localStorage.setItem(LOCALITY_STORAGE_KEY, JSON.stringify(payload));
-      } catch {}
+      } catch {
+        // The UI may still adapt for this view; the SWFUS witness reports the durable failure separately.
+      }
 
       window.dispatchEvent(new CustomEvent(LOCALITY_EVENT, { detail: payload }));
       witnessProgressiveUpdate(payload);
@@ -132,7 +129,14 @@ export function useArenaLocality() {
     }
 
     function handleOnline() {
-      void retryProgressiveSync(LOCALITY_SWFUS_NODE).then(setProgressiveReceipt);
+      void retryProgressiveSync(LOCALITY_SWFUS_NODE)
+        .then((receipt) => {
+          setProgressiveReceipt(receipt);
+          if (receipt) setProgressiveError(null);
+        })
+        .catch(() => {
+          // Existing pending local witness remains authoritative for this device.
+        });
     }
 
     window.addEventListener(LOCALITY_EVENT, handleLocality);
@@ -189,6 +193,7 @@ export function useArenaLocality() {
     source,
     detecting,
     progressiveReceipt,
+    progressiveError,
     setProvince,
     detectLocation,
   };

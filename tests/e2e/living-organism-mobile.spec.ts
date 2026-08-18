@@ -114,6 +114,61 @@ test('province state drives weather and editorial surface without leaving the sh
   await expectNoHorizontalOverflow(page);
 });
 
+test('province choice becomes a revisioned SWFUS local witness and survives reload', async ({ page }) => {
+  await page.goto('/news');
+
+  await page.locator('[data-province-selector="gauteng"]').click();
+
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const witnesses = JSON.parse(
+          window.localStorage.getItem('fivesarena.swfus.witnesses.v1') || '{}',
+        ) as Record<string, { revision?: number; data?: { provinceSlug?: string } }>;
+        const receipts = JSON.parse(
+          window.localStorage.getItem('fivesarena.swfus.receipts.v1') || '[]',
+        ) as Array<{ nodeId?: string; accepted?: boolean; syncState?: string; revision?: number }>;
+        const witness = witnesses['fivesarena:locality:province'];
+        const receipt = [...receipts]
+          .reverse()
+          .find((item) => item.nodeId === 'fivesarena:locality:province');
+        return {
+          province: witness?.data?.provinceSlug,
+          witnessRevision: witness?.revision,
+          receiptRevision: receipt?.revision,
+          accepted: receipt?.accepted,
+          syncState: receipt?.syncState,
+        };
+      }),
+    )
+    .toEqual({
+      province: 'gauteng',
+      witnessRevision: 1,
+      receiptRevision: 1,
+      accepted: true,
+      syncState: 'pending_sync',
+    });
+
+  await page.reload();
+  await expect(page.getByTestId('current-province')).toHaveText('Gauteng');
+
+  await page.locator('[data-province-selector="limpopo"]').click();
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const witnesses = JSON.parse(
+          window.localStorage.getItem('fivesarena.swfus.witnesses.v1') || '{}',
+        ) as Record<string, { revision?: number; data?: { provinceSlug?: string } }>;
+        const witness = witnesses['fivesarena:locality:province'];
+        return {
+          province: witness?.data?.provinceSlug,
+          revision: witness?.revision,
+        };
+      }),
+    )
+    .toEqual({ province: 'limpopo', revision: 2 });
+});
+
 test('province controls retain mobile touch targets and horizontal scroll stays bounded', async ({ page }) => {
   await page.goto('/news');
 

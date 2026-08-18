@@ -2,116 +2,160 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  APU_STAGES,
-  applyCrudToSnapshot,
-  assertApuReceivableBySwfus,
-  createApuProgressiveUpdate,
-  markApuQueuePoc,
-  markApuSwfusSynced,
-  normalizeApuProgressiveUpdate,
-  promoteApuProgressiveUpdate,
-} from "../../lib/offline/apuProgressiveUpdate.js";
+  KPGS_PROGRESSIVE_UPDATE,
+  SWFUS_STAGES,
+  assertSwfusReceiptForUpdate,
+  buildSwfusReceipt,
+  classifySwfusReceipt,
+  createOfflineProgressiveUpdate,
+  migrateLegacyApuToProgressiveUpdate,
+  normalizeProgressiveUpdate,
+  normalizeSwfusReceipt,
+} from "../../lib/offline/kpgsProgressiveUpdate.js";
 
-function implemented(overrides = {}) {
-  return createApuProgressiveUpdate({
-    updateId: "booking:apu:test-001",
-    resource: "booking",
+function canonical(overrides = {}) {
+  return createOfflineProgressiveUpdate({
+    eventType: "booking",
+    idempotencyKey: "booking:test-canonical-001",
+    operation: "CREATE",
     resourceId: "booking-001",
-    operation: "update",
-    baseVersion: 4,
+    evidenceRefs: ["queue://indexeddb/booking:test-canonical-001"],
     ...overrides,
   });
 }
 
-test("APU starts at S1_IMPLEMENTED and executes deterministic CRUD", () => {
-  const update = implemented();
-  assert.equal(update.stage, APU_STAGES.IMPLEMENTED);
+test("new Five's Arena offline writes use the canonical KPGS progressive-update envelope", () => {
+  const update = canonical();
 
-  const result = applyCrudToSnapshot({ status: "draft", court: 2 }, update, {
-    status: "confirmed",
-  });
-
-  assert.deepEqual(result, { status: "confirmed", court: 2 });
+  assert.equal(update.schema, "kpgs.progressive-update.v1");
+  assert.equal(update.operation, "CREATE");
+  assert.equal(update.boundary_marker, "#NB");
+  assert.equal(update.authority_effect, "none");
+  assert.equal(update.state_class, "pending_proposal");
+  assert.equal(update.apu_status, "UNSPECIFIED");
+  assert.equal(update.poc_validated, true);
+  assert.equal(update.foc_detected, false);
+  assert.equal(KPGS_PROGRESSIVE_UPDATE.canonicalCommit, "6eeb285d0775a7e74ceadc06e32b4068fcfbc595");
 });
 
-test("queue persistence promotes only S1_IMPLEMENTED to S2_POC", () => {
-  const poc = markApuQueuePoc(implemented(), {
-    receiptId: "queue:booking:test-001",
-    at: "2026-08-18T08:00:00.000Z",
-  });
+test("mutating canonical updates cannot bypass POC evidence or #NB", () => {
+  const update = canonical();
 
-  assert.equal(poc.stage, APU_STAGES.POC);
-  assert.equal(poc.receipts.length, 1);
-  assert.equal(poc.receipts[0].kind, "crud-local-persistence");
-});
-
-test("SWFUS intake refuses unexecuted S1 updates", () => {
   assert.throws(
-    () => assertApuReceivableBySwfus(implemented()),
-    /SWFUS intake requires S2_POC/,
+    () => normalizeProgressiveUpdate({ ...update, poc_validated: false }),
+    /poc_validated=true/,
+  );
+  assert.throws(
+    () => normalizeProgressiveUpdate({ ...update, evidence_refs: [] }),
+    /evidence_refs/,
+  );
+  assert.throws(
+    () => normalizeProgressiveUpdate({ ...update, boundary_marker: "NB" }),
+    /#NB/,
+  );
+  assert.throws(
+    () => normalizeProgressiveUpdate({ ...update, authority_effect: "canonical" }),
+    /authority_effect must remain none/,
   );
 });
 
-test("server persistence promotes exact S2_POC to S3_SYNCED", () => {
-  const poc = markApuQueuePoc(implemented(), {
-    receiptId: "queue:booking:test-002",
-    at: "2026-08-18T08:00:00.000Z",
-  });
-  const synced = markApuSwfusSynced(poc, {
-    receiptId: "swfus:booking:test-002",
-    at: "2026-08-18T08:00:01.000Z",
+test("canonical SWFUS APPLIED receipt preserves all eight stages and never grants authority", () => {
+  const update = canonical();
+  const receipt = buildSwfusReceipt(update, {
+    disposition: "APPLIED",
+    receiptId: "swfus:test-applied-001",
+    stateDigest: "abc123",
+    createdAt: "2026-08-18T12:00:00.000Z",
   });
 
-  assert.equal(synced.stage, APU_STAGES.SYNCED);
-  assert.equal(synced.receipts.length, 2);
-  assert.equal(synced.receipts[1].kind, "swfus-server-persistence");
+  assert.equal(receipt.schema, "kpgs.swfus.receipt.v1");
+  assert.deepEqual(receipt.stages.map((stage) => stage.stage), SWFUS_STAGES);
+  assert.equal(receipt.disposition, "APPLIED");
+  assert.equal(receipt.synchronized, true);
+  assert.equal(receipt.canonical_authority_changed, false);
+  assert.equal(classifySwfusReceipt(receipt), "APPLIED");
+  assert.deepEqual(assertSwfusReceiptForUpdate(receipt, update), receipt);
 });
 
-test("progression cannot skip proof stages", () => {
-  assert.throws(
-    () =>
-      promoteApuProgressiveUpdate(implemented(), APU_STAGES.SYNCED, {
-        receipt_id: "forged:skip",
-        kind: "forged",
-        evidence: "attempted stage skip",
-        at: "2026-08-18T08:00:00.000Z",
-      }),
-    /must be progressive/,
+test("APU YELLOW is held at POC/FOC and later stages are NOT_REACHED", () => {
+  const update = canonical({ apuStatus: "YELLOW" });
+  const receipt = buildSwfusReceipt(update, {
+    disposition: "HELD",
+    receiptId: "swfus:test-held-001",
+    stopStage: "POC_FOC_CHECK",
+    stopStatus: "HOLD",
+    stopReason: "APU YELLOW requires review before mutation.",
+    createdAt: "2026-08-18T12:00:00.000Z",
+  });
+
+  const pocStage = receipt.stages.find((stage) => stage.stage === "POC_FOC_CHECK");
+  const stateStage = receipt.stages.find((stage) => stage.stage === "STATE_UPDATE");
+  const distributionStage = receipt.stages.find((stage) => stage.stage === "DISTRIBUTION");
+
+  assert.equal(pocStage.status, "HOLD");
+  assert.equal(stateStage.status, "NOT_REACHED");
+  assert.equal(distributionStage.status, "NOT_REACHED");
+  assert.equal(receipt.synchronized, false);
+  assert.equal(classifySwfusReceipt(receipt), "HELD");
+});
+
+test("legacy Five's Arena S2_POC records migrate into canonical pending proposals without authority promotion", () => {
+  const migrated = migrateLegacyApuToProgressiveUpdate(
+    {
+      schema: "fivesarena.apu.progressive-update.v1",
+      update_id: "booking:apu:legacy-001",
+      resource: "booking",
+      resource_id: "booking-legacy",
+      operation: "update",
+      base_version: 4,
+      stage: "S2_POC",
+      receipts: [
+        {
+          receipt_id: "queue:booking:legacy-001",
+          kind: "crud-local-persistence",
+          evidence: "IndexedDB queue persisted.",
+          at: "2026-08-18T08:00:00.000Z",
+        },
+      ],
+    },
+    { eventType: "booking", idempotencyKey: "booking:legacy-001" },
   );
+
+  assert.equal(migrated.schema, "kpgs.progressive-update.v1");
+  assert.equal(migrated.operation, "UPDATE");
+  assert.equal(migrated.state_class, "pending_proposal");
+  assert.equal(migrated.authority_effect, "none");
+  assert.ok(migrated.evidence_refs.includes("legacy-apu://receipt/queue:booking:legacy-001"));
 });
 
-test("S3_SYNCED cannot be self-submitted as SWFUS input", () => {
-  const poc = markApuQueuePoc(implemented(), {
-    receiptId: "queue:booking:test-003",
-    at: "2026-08-18T08:00:00.000Z",
-  });
-  const synced = markApuSwfusSynced(poc, {
-    receiptId: "swfus:booking:test-003",
-    at: "2026-08-18T08:00:01.000Z",
+test("SWFUS receipts are rejected when stage order or update identity is forged", () => {
+  const update = canonical();
+  const receipt = buildSwfusReceipt(update, {
+    disposition: "APPLIED",
+    receiptId: "swfus:test-integrity-001",
+    stateDigest: "digest",
+    createdAt: "2026-08-18T12:00:00.000Z",
   });
 
-  assert.throws(() => assertApuReceivableBySwfus(synced), /requires S2_POC/);
+  const wrongOrder = structuredClone(receipt);
+  [wrongOrder.stages[0], wrongOrder.stages[1]] = [wrongOrder.stages[1], wrongOrder.stages[0]];
+  assert.throws(() => normalizeSwfusReceipt(wrongOrder), /stage order mismatch/);
+
+  const wrongUpdate = { ...receipt, update_id: "forged-update" };
+  assert.throws(() => assertSwfusReceiptForUpdate(wrongUpdate, update), /update_id mismatch/);
 });
 
-test("invalid CRUD operations and malformed base versions are rejected", () => {
-  assert.throws(
-    () => implemented({ operation: "patch" }),
-    /operation must be one of/,
-  );
+test("synchronization remains distinct from canonical authority", () => {
+  const update = canonical();
+  const forged = {
+    ...buildSwfusReceipt(update, {
+      disposition: "APPLIED",
+      receiptId: "swfus:test-authority-001",
+      stateDigest: "digest",
+      createdAt: "2026-08-18T12:00:00.000Z",
+    }),
+    canonical_authority_changed: true,
+  };
 
-  assert.throws(
-    () => implemented({ baseVersion: -1 }),
-    /base_version must be a non-negative integer/,
-  );
-});
-
-test("normalization preserves backwards-compatible optional resource id", () => {
-  const normalized = normalizeApuProgressiveUpdate({
-    update_id: "broadcast:apu:test-004",
-    resource: "broadcast",
-    operation: "create",
-    stage: APU_STAGES.IMPLEMENTED,
-  });
-
-  assert.equal(normalized.resource_id, null);
+  assert.throws(() => normalizeSwfusReceipt(forged), /may not claim canonical authority/);
 });

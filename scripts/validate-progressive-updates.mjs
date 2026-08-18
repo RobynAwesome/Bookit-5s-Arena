@@ -20,7 +20,7 @@ requireText(contract, "schema: 'kpgs.swfus.update.v1'", 'canonical update schema
 requireText(contract, "receiptSchema: 'kpgs.swfus.receipt.v1'", 'canonical receipt schema ID missing');
 requireText(
   contract,
-  "canonicalCommit: '762b306d082c2c5932800406eb75affb1d30bb11'",
+  "canonicalCommit: 'f7bdd14c624faf155eb01dd38a37ff3d5250e942'",
   'Introduction-to-MCP contract pin missing',
 );
 for (const action of ['CREATE', 'READ', 'UPDATE', 'DELETE']) {
@@ -69,5 +69,5 @@ if (failures.length) {
 
 console.log('Adaptive Progressive Updates / SWFUS verification PASS');
 console.log('Local witness -> pending_sync -> canonical adapter proof; stale writes fail closed.');
-console.log('Canonical contract: Introduction-to-MCP@762b306d082c2c5932800406eb75affb1d30bb11.');
+console.log('Canonical contract: Introduction-to-MCP@f7bdd14c624faf155eb01dd38a37ff3d5250e942.');
 console.log('Pilot scope: fivesarena:locality:province only; transactional surfaces remain outside this membrane.');

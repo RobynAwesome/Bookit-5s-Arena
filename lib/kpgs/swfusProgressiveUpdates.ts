@@ -33,7 +33,12 @@ type ApplyInput = {
 };
 
 function browserStorageAvailable() {
-  return typeof window !== 'undefined' && Boolean(window.localStorage);
+  if (typeof window === 'undefined') return false;
+  try {
+    return Boolean(window.localStorage);
+  } catch {
+    return false;
+  }
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -47,7 +52,9 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson(key: string, value: unknown) {
-  if (!browserStorageAvailable()) return;
+  if (!browserStorageAvailable()) {
+    throw new Error('progressive-update-storage-unavailable');
+  }
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
@@ -137,7 +144,13 @@ async function tryCanonicalSync(
   update: SwfusProgressiveUpdate,
   localReceipt: SwfusReceipt,
 ): Promise<SwfusReceipt> {
-  if (typeof fetch !== 'function' || !navigator.onLine) return localReceipt;
+  if (
+    typeof fetch !== 'function' ||
+    typeof navigator === 'undefined' ||
+    !navigator.onLine
+  ) {
+    return localReceipt;
+  }
 
   try {
     const response = await fetch('/api/organism/progressive-updates', {
@@ -147,7 +160,10 @@ async function tryCanonicalSync(
       body: JSON.stringify({ update, localReceipt }),
     });
     const payload = (await response.json()) as { receipt?: unknown };
-    if (response.ok && isSwfusReceipt(payload.receipt)) {
+
+    // A valid canonical receipt is authoritative even when the HTTP status is a
+    // conflict/rejection. Only absence of a valid receipt is treated as transport pending.
+    if (isSwfusReceipt(payload.receipt)) {
       replaceReceipt(payload.receipt);
       return payload.receipt;
     }
@@ -234,16 +250,19 @@ export async function applyLocalProgressiveUpdate(
   });
   persistReceipt(localReceipt);
 
-  const synced = await tryCanonicalSync(update, localReceipt);
-  if (synced.syncState === 'synced') {
+  const canonicalReceipt = await tryCanonicalSync(update, localReceipt);
+  if (canonicalReceipt.accepted && canonicalReceipt.syncState === 'synced') {
     const latestWitnesses = readWitnesses();
     const latest = latestWitnesses[input.nodeId];
     if (latest && latest.evidenceHash === evidenceHash) {
-      latestWitnesses[input.nodeId] = { ...latest, evidenceHash: synced.evidenceHash };
+      latestWitnesses[input.nodeId] = {
+        ...latest,
+        evidenceHash: canonicalReceipt.evidenceHash,
+      };
       writeJson(WITNESS_KEY, latestWitnesses);
     }
   }
-  return synced;
+  return canonicalReceipt;
 }
 
 export async function retryProgressiveSync(nodeId: string): Promise<SwfusReceipt | null> {

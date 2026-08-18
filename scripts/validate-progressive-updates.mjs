@@ -20,13 +20,13 @@ requireText(contract, "schema: 'kpgs.swfus.update.v1'", 'canonical update schema
 requireText(contract, "receiptSchema: 'kpgs.swfus.receipt.v1'", 'canonical receipt schema ID missing');
 requireText(
   contract,
-  "canonicalCommit: '689f9bc689be5d4fa216a887aee79a5168c63fd2'",
+  "canonicalCommit: '762b306d082c2c5932800406eb75affb1d30bb11'",
   'Introduction-to-MCP contract pin missing',
 );
 for (const action of ['CREATE', 'READ', 'UPDATE', 'DELETE']) {
   requireText(contract, `'${action}'`, `CRUD action missing from portable contract: ${action}`);
 }
-for (const state of ['synced', 'pending_sync', 'severed']) {
+for (const state of ['synced', 'pending_sync', 'severed', 'not_applicable']) {
   requireText(contract, `'${state}'`, `SWFUS sync state missing: ${state}`);
 }
 
@@ -39,10 +39,10 @@ requireText(runtime, "method: 'POST'", 'progressive update must use non-cacheabl
 
 requireText(adapter, "'/kpgs/progressive-updates'", 'canonical .NET adapter progressive endpoint missing');
 requireText(adapter, "receipt.syncState !== 'synced'", 'adapter must not promote unproven sync');
-requireText(adapter, "X-KPGS-Capability-Lease", 'capability lease forwarding hook missing');
+requireText(adapter, 'X-KPGS-Capability-Lease', 'capability lease forwarding hook missing');
 
 requireText(route, "body.update.nodeId !== 'fivesarena:locality:province'", 'pilot node allowlist missing');
-requireText(route, "status: 202", 'pending_sync transport state missing');
+requireText(route, 'status: 202', 'pending_sync transport state missing');
 requireText(route, "'Cache-Control': 'no-store'", 'progressive update response must be no-store');
 
 requireText(localityHook, 'applyLocalProgressiveUpdate', 'locality update is not witnessed through SWFUS');
@@ -69,4 +69,5 @@ if (failures.length) {
 
 console.log('Adaptive Progressive Updates / SWFUS verification PASS');
 console.log('Local witness -> pending_sync -> canonical adapter proof; stale writes fail closed.');
+console.log('Canonical contract: Introduction-to-MCP@762b306d082c2c5932800406eb75affb1d30bb11.');
 console.log('Pilot scope: fivesarena:locality:province only; transactional surfaces remain outside this membrane.');

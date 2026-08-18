@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+  FaCheckCircle,
+  FaCloudUploadAlt,
   FaCrosshairs,
+  FaExclamationTriangle,
   FaMapMarkerAlt,
   FaNewspaper,
   FaSatelliteDish,
@@ -13,6 +16,7 @@ import {
 } from 'react-icons/fa';
 import { useArenaLocality } from '@/hooks/useArenaLocality';
 import { SOUTH_AFRICA_PROVINCES } from '@/lib/organism/southAfrica';
+import type { SwfusReceipt } from '@/lib/kpgs/progressiveUpdateContract';
 
 const LocalityScene = dynamic(() => import('@/components/organism/LocalityScene'), {
   ssr: false,
@@ -78,6 +82,29 @@ function adapterClasses(status: AdapterStatus) {
   return 'border-amber-300/20 bg-amber-300/8 text-amber-200';
 }
 
+function progressiveState(receipt: SwfusReceipt | null) {
+  if (!receipt) return null;
+  if (!receipt.accepted || receipt.syncState === 'severed') {
+    return {
+      label: 'Could not save · review',
+      className: 'border-red-300/20 bg-red-300/8 text-red-200',
+      icon: FaExclamationTriangle,
+    };
+  }
+  if (receipt.syncState === 'synced') {
+    return {
+      label: 'Saved',
+      className: 'border-green-300/25 bg-green-300/10 text-green-200',
+      icon: FaCheckCircle,
+    };
+  }
+  return {
+    label: 'Saved on this device · sync pending',
+    className: 'border-sky-300/20 bg-sky-300/8 text-sky-200',
+    icon: FaCloudUploadAlt,
+  };
+}
+
 function StaticOrganismScene() {
   return (
     <div
@@ -102,6 +129,7 @@ export default function LivingOrganismSurface() {
     provinceSlug,
     source,
     detecting,
+    progressiveReceipt,
     setProvince,
     detectLocation,
   } = useArenaLocality();
@@ -140,6 +168,7 @@ export default function LivingOrganismSurface() {
   const articles = useMemo(() => feed?.editorial?.articles || [], [feed]);
   const weather = feed?.weather || null;
   const adapterStatus = feed?.governance?.adapter?.status || 'contract-only';
+  const updateState = progressiveState(progressiveReceipt);
 
   return (
     <section
@@ -166,6 +195,17 @@ export default function LivingOrganismSurface() {
               >
                 <FaShieldAlt /> {adapterLabel(adapterStatus)}
               </span>
+              {updateState ? (
+                <span
+                  className={`inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.12em] ${updateState.className}`}
+                  data-testid="progressive-update-state"
+                  data-sync-state={progressiveReceipt?.syncState}
+                  title={progressiveReceipt?.reason || undefined}
+                  aria-live="polite"
+                >
+                  <updateState.icon /> {updateState.label}
+                </span>
+              ) : null}
             </div>
             <h2 className="max-w-4xl text-4xl font-black uppercase leading-[0.92] tracking-tight text-white sm:text-5xl lg:text-7xl">
               South Africa changes. <span className="text-yellow-400">Five&apos;s Arena reacts.</span>

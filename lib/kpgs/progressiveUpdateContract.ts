@@ -21,10 +21,7 @@ export const SWFUS_STAGE_ORDER = [
 
 export type CrudOperation = 'CREATE' | 'READ' | 'UPDATE' | 'DELETE';
 export type ApuStatus = 'GREEN' | 'YELLOW' | 'RED' | 'UNSPECIFIED';
-export type ProgressiveStateClass =
-  | 'non_authoritative'
-  | 'derived_projection'
-  | 'pending_proposal';
+export type ProgressiveStateClass = 'non_authoritative' | 'derived_projection' | 'pending_proposal';
 export type SwfusDisposition = 'APPLIED' | 'OBSERVED' | 'HELD' | 'REJECTED';
 
 export type KpgsProgressiveUpdate = {
@@ -74,26 +71,39 @@ export type KpgsSwfusReceipt = {
   created_at: string;
 };
 
+const nonEmpty = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+const uniqueNonEmptyStrings = (value: unknown): value is string[] =>
+  Array.isArray(value) &&
+  value.every(nonEmpty) &&
+  new Set(value).size === value.length;
+
 export function isKpgsProgressiveUpdate(value: unknown): value is KpgsProgressiveUpdate {
   if (!value || typeof value !== 'object') return false;
   const item = value as Partial<KpgsProgressiveUpdate>;
   const mutation = ['CREATE', 'UPDATE', 'DELETE'].includes(item.operation || '');
+  const expectedVersionValid =
+    item.expected_version === undefined ||
+    item.expected_version === null ||
+    (Number.isInteger(item.expected_version) && Number(item.expected_version) >= 0);
   return (
     item.schema === KPGS_PROGRESSIVE_UPDATE.schema &&
-    typeof item.update_id === 'string' && item.update_id.length > 0 &&
-    typeof item.node_id === 'string' && item.node_id.length > 0 &&
+    nonEmpty(item.update_id) &&
+    nonEmpty(item.node_id) &&
     ['CREATE', 'READ', 'UPDATE', 'DELETE'].includes(item.operation || '') &&
-    typeof item.lane === 'string' && item.lane.length > 0 &&
-    typeof item.context_route === 'string' && item.context_route.length > 0 &&
-    typeof item.protocol === 'string' &&
-    typeof item.idempotency_key === 'string' && item.idempotency_key.length > 0 &&
+    nonEmpty(item.lane) &&
+    nonEmpty(item.context_route) &&
+    nonEmpty(item.protocol) &&
+    nonEmpty(item.idempotency_key) &&
     ['GREEN', 'YELLOW', 'RED', 'UNSPECIFIED'].includes(item.apu_status || '') &&
     typeof item.poc_validated === 'boolean' &&
     typeof item.foc_detected === 'boolean' &&
     typeof item.invariant_passed === 'boolean' &&
     item.authority_effect === 'none' &&
     ['non_authoritative', 'derived_projection', 'pending_proposal'].includes(item.state_class || '') &&
-    Array.isArray(item.evidence_refs) && item.evidence_refs.every((ref) => typeof ref === 'string' && ref.length > 0) &&
+    uniqueNonEmptyStrings(item.evidence_refs) &&
+    (item.correlation_id === undefined || typeof item.correlation_id === 'string') &&
+    (item.source === undefined || typeof item.source === 'string') &&
+    expectedVersionValid &&
     item.boundary_marker === '#NB' &&
     (!mutation || (item.poc_validated === true && item.foc_detected === false && item.evidence_refs.length > 0))
   );
@@ -104,17 +114,19 @@ export function isKpgsSwfusReceipt(value: unknown): value is KpgsSwfusReceipt {
   const item = value as Partial<KpgsSwfusReceipt>;
   if (
     item.schema !== KPGS_PROGRESSIVE_UPDATE.receiptSchema ||
-    typeof item.receipt_id !== 'string' ||
-    typeof item.update_id !== 'string' ||
-    typeof item.node_id !== 'string' ||
+    !nonEmpty(item.receipt_id) ||
+    !nonEmpty(item.update_id) ||
+    !nonEmpty(item.node_id) ||
     !['CREATE', 'READ', 'UPDATE', 'DELETE'].includes(item.operation || '') ||
     !['APPLIED', 'OBSERVED', 'HELD', 'REJECTED'].includes(item.disposition || '') ||
     typeof item.synchronized !== 'boolean' ||
     item.canonical_authority_changed !== false ||
-    !Array.isArray(item.evidence_refs) ||
+    !(item.state_digest === null || typeof item.state_digest === 'string') ||
+    !uniqueNonEmptyStrings(item.evidence_refs) ||
+    typeof item.correlation_id !== 'string' ||
     item.boundary_marker !== '#NB' ||
     typeof item.replayed !== 'boolean' ||
-    typeof item.created_at !== 'string' ||
+    !nonEmpty(item.created_at) ||
     !Array.isArray(item.stages) ||
     item.stages.length !== SWFUS_STAGE_ORDER.length
   ) return false;
@@ -122,7 +134,7 @@ export function isKpgsSwfusReceipt(value: unknown): value is KpgsSwfusReceipt {
   return item.stages.every((stage, index) =>
     Boolean(stage) &&
     stage.stage === SWFUS_STAGE_ORDER[index] &&
-    typeof stage.status === 'string' &&
+    nonEmpty(stage.status) &&
     typeof stage.reason === 'string',
   );
 }

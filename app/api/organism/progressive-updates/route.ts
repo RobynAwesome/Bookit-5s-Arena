@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { syncKpgsProgressiveUpdate } from '@/lib/kpgs/domainAdapterClient';
 import {
   isSwfusProgressiveUpdate,
+  isSwfusReceipt,
   type SwfusReceipt,
 } from '@/lib/kpgs/progressiveUpdateContract';
 
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const localReceipt = isSwfusReceipt(body.localReceipt) ? body.localReceipt : null;
   const result = await syncKpgsProgressiveUpdate(body.update);
   if (result.receipt) {
     const receipt = result.receipt;
@@ -76,7 +78,7 @@ export async function POST(request: Request) {
     {
       schema: 'fivesarena.progressive-update-sync.v1',
       state: 'pending_sync',
-      receipt: body.localReceipt ?? null,
+      receipt: localReceipt,
       reason: result.reason,
       adapter: {
         configured: result.configured,

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3002",
     "dev:bdd": "cross-env NEXT_PUBLIC_FIXTURES_REFACTOR_SHIELD=false NEXT_PUBLIC_BLACKBOX_MARKET_MASK=false NEXT_PUBLIC_BDD_TEST_HOOKS=true next dev -p 3002",
-    "build": "next build --no-lint",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "build:css": "npx tailwindcss -i ./assets/styles/globals.css -o ./public/styles.css --minify",

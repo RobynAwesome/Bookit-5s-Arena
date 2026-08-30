@@ -29,7 +29,10 @@ assert.match(page, /courtSource=\{courtResult\.source\}/);
 
 const chapterNames = ['ARRIVE', 'REALITY', 'RESERVE', 'PLAY', 'LEGACY'];
 for (const chapter of chapterNames) {
-  assert.match(chronicle, new RegExp(`short:\s*"${chapter}"`));
+  assert.ok(
+    chronicle.includes(`short: "${chapter}"`),
+    `Arena Chronicle is missing chapter ${chapter}`,
+  );
 }
 assert.match(chronicle, /IntersectionObserver/);
 assert.match(chronicle, /useReducedMotion/);

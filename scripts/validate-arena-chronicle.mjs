@@ -7,8 +7,10 @@ function read(path) {
 }
 
 const page = read('app/page.jsx');
+const layout = read('app/layout.jsx');
 const chronicle = read('components/experience/ArenaChronicle.jsx');
 const world = read('components/experience/ArenaWorld.jsx');
+const contextualNavigation = read('components/ContextualFloatingNavigation.jsx');
 const realitySource = read('lib/arena/reality.js');
 
 assert.match(page, /ArenaChronicle/);
@@ -27,6 +29,15 @@ for (const retiredHomeImport of [
 assert.match(page, /source:\s*'database-empty'/);
 assert.match(page, /courtSource=\{courtResult\.source\}/);
 
+assert.match(layout, /ContextualFloatingNavigation/);
+assert.doesNotMatch(layout, /<SoccerBallMenu\s*\/?>/);
+assert.doesNotMatch(layout, /<BottomNavbar\s*\/?>/);
+assert.match(contextualNavigation, /if \(pathname === "\/"\) return null/);
+assert.match(contextualNavigation, /window\.location\.hash !== "#courts"/);
+assert.match(contextualNavigation, /getElementById\("arena-reserve"\)/);
+assert.match(contextualNavigation, /<SoccerBallMenu\s*\/>/);
+assert.match(contextualNavigation, /<BottomNavbar\s*\/>/);
+
 const chapterNames = ['ARRIVE', 'REALITY', 'RESERVE', 'PLAY', 'LEGACY'];
 for (const chapter of chapterNames) {
   assert.ok(
@@ -39,6 +50,7 @@ assert.match(chronicle, /useReducedMotion/);
 assert.match(chronicle, /navigator\.connection\?\.saveData/);
 assert.match(chronicle, /aria-label="Arena chapters"/);
 assert.match(chronicle, /aria-label="Arena chapter shortcuts"/);
+assert.match(chronicle, /id="arena-reserve"/);
 assert.match(chronicle, /data-kpgs-proof/);
 assert.match(chronicle, /data-slot-proof="resolve-at-court"/);
 assert.match(chronicle, /Court record verified/);
@@ -92,6 +104,8 @@ console.log(JSON.stringify({
   ownReactThreeImplementation: true,
   reducedMotion: true,
   saveDataFallback: true,
+  oneHomepageFloatingNavigationAuthority: true,
+  legacyCourtDeepLinkPreserved: true,
   courtInventoryDoesNotClaimSlotAvailability: true,
   truthStates: ['verified-source', 'database-empty', 'unavailable'],
 }, null, 2));

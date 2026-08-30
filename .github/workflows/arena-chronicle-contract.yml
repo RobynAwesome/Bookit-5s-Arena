@@ -7,7 +7,10 @@ on:
   pull_request:
     paths:
       - 'app/page.jsx'
+      - 'app/layout.jsx'
       - 'components/experience/**'
+      - 'components/ContextualFloatingNavigation.jsx'
+      - 'components/NewsletterPopup.jsx'
       - 'lib/arena/**'
       - 'scripts/validate-arena-chronicle.mjs'
       - 'package.json'

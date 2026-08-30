@@ -11,6 +11,7 @@ const layout = read('app/layout.jsx');
 const chronicle = read('components/experience/ArenaChronicle.jsx');
 const world = read('components/experience/ArenaWorld.jsx');
 const contextualNavigation = read('components/ContextualFloatingNavigation.jsx');
+const newsletterPopup = read('components/NewsletterPopup.jsx');
 const realitySource = read('lib/arena/reality.js');
 
 assert.match(page, /ArenaChronicle/);
@@ -37,6 +38,9 @@ assert.match(contextualNavigation, /window\.location\.hash !== "#courts"/);
 assert.match(contextualNavigation, /getElementById\("arena-reserve"\)/);
 assert.match(contextualNavigation, /<SoccerBallMenu\s*\/>/);
 assert.match(contextualNavigation, /<BottomNavbar\s*\/>/);
+assert.match(newsletterPopup, /if \(pathname === "\/"\)/);
+assert.match(newsletterPopup, /setShow\(false\)/);
+assert.match(newsletterPopup, /if \(pathname === "\/"\) return null/);
 
 const chapterNames = ['ARRIVE', 'REALITY', 'RESERVE', 'PLAY', 'LEGACY'];
 for (const chapter of chapterNames) {
@@ -106,6 +110,7 @@ console.log(JSON.stringify({
   saveDataFallback: true,
   oneHomepageFloatingNavigationAuthority: true,
   legacyCourtDeepLinkPreserved: true,
+  timedNewsletterInterruptionOnHome: false,
   courtInventoryDoesNotClaimSlotAvailability: true,
   truthStates: ['verified-source', 'database-empty', 'unavailable'],
 }, null, 2));

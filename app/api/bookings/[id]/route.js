@@ -5,22 +5,24 @@ import { requireRole } from '@/lib/roles';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import '@/models/Court';
-import { sendBookingConfirmation } from '@/lib/sendBookingConfirmation';
-import { sendResendConfirmation, isResendBookingConfirmationConfigured } from '@/lib/messaging/bookingResendConfirmation';
+import { dispatchBookingCommunications } from '@/lib/bookings/dispatchBookingCommunications';
 import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
 
+const toMinutes = (time) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
 // GET /api/bookings/:id — fetch a single booking (owner or admin)
-export async function GET(request, { params }) {
+export async function GET(_request, { params }) {
   try {
     const { id } = await params;
 
-    // Validate ObjectId format
     if (!/^[a-fA-F0-9]{24}$/.test(id)) {
       return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
     }
 
     const session = await getAuthSession();
-
     if (!session) {
       return NextResponse.json({ error: 'You must be logged in' }, { status: 401 });
     }
@@ -32,7 +34,8 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    if (booking.user.toString() !== session.user.id && !requireRole(session, 'admin')) {
+    const isOwner = Boolean(booking.user) && booking.user.toString() === session.user.id;
+    if (!isOwner && !requireRole(session, 'admin')) {
       return NextResponse.json({ error: 'Not authorised' }, { status: 403 });
     }
 
@@ -43,51 +46,74 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT /api/bookings/:id — edit a booking (owner only, not within 8hrs)
+// PUT /api/bookings/:id — edit a registered user's reservation (not within 8hrs)
 export async function PUT(request, { params }) {
   try {
     const { id } = await params;
 
-    // Validate ObjectId format
     if (!/^[a-fA-F0-9]{24}$/.test(id)) {
       return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
     }
 
     const session = await getAuthSession();
-
     if (!session) {
       return NextResponse.json({ error: 'You must be logged in' }, { status: 401 });
     }
 
     await connectDB();
-    const booking = await Booking.findById(id).populate('court');
+    const booking = await Booking.findById(id)
+      .populate('court')
+      .populate('user', 'name email phone');
 
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
+    if (!booking.court) {
+      return NextResponse.json({ error: 'Booking court no longer exists' }, { status: 409 });
+    }
 
-    if (booking.user.toString() !== session.user.id) {
+    const ownerId = booking.user?._id?.toString?.() || booking.user?.toString?.();
+    if (!ownerId || ownerId !== session.user.id) {
       return NextResponse.json({ error: 'Not authorised' }, { status: 403 });
     }
 
-    // Block edit within 8 hours of booking
-    const [h, m] = booking.start_time.split(':').map(Number);
-    const bookingDateTime = new Date(`${booking.date}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`);
+    if (booking.status === 'cancelled') {
+      return NextResponse.json({ error: 'Cancelled bookings cannot be edited' }, { status: 409 });
+    }
+
+    const [hours, minutes] = booking.start_time.split(':').map(Number);
+    const bookingDateTime = new Date(
+      `${booking.date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+    );
     const hoursUntil = (bookingDateTime - new Date()) / (1000 * 60 * 60);
     if (hoursUntil < 8) {
-      return NextResponse.json({ error: 'Cannot edit a booking within 8 hours of start time' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Cannot edit a booking within 8 hours of start time' },
+        { status: 400 }
+      );
     }
 
     const { date, start_time, duration } = await request.json();
 
-    // Validate required fields
     if (!date || !start_time || !duration) {
-      return NextResponse.json({ error: 'Date, start time and duration are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Date, start time and duration are required' },
+        { status: 400 }
+      );
     }
 
-    // Validate date format (YYYY-MM-DD)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date).getTime())) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(new Date(date).getTime())) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(date) < today) {
+      return NextResponse.json({ error: 'Bookings cannot be moved into the past' }, { status: 400 });
+    }
+
+    if (typeof duration !== 'number' || duration < 1 || duration > 3 || !Number.isInteger(duration)) {
+      return NextResponse.json({ error: 'Duration must be 1, 2 or 3 hours' }, { status: 400 });
     }
 
     if (!isAllowedBookingStartTime(start_time, duration)) {
@@ -97,21 +123,17 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Validate duration is an integer in allowed range
-    if (typeof duration !== 'number' || duration < 1 || duration > 3 || !Number.isInteger(duration)) {
-      return NextResponse.json({ error: 'Duration must be 1, 2 or 3 hours' }, { status: 400 });
-    }
-
-    const toMinutes = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-    const OPEN = 10 * 60, CLOSE = 22 * 60;
     const newStart = toMinutes(start_time);
     const newEnd = newStart + duration * 60;
-
-    if (newStart < OPEN || newEnd > CLOSE) {
-      return NextResponse.json({ error: 'Bookings must start at 10:00 and end by 22:00' }, { status: 400 });
+    if (newStart < 10 * 60 || newEnd > 22 * 60) {
+      return NextResponse.json(
+        { error: 'Bookings must start at 10:00 and end by 22:00' },
+        { status: 400 }
+      );
     }
 
-    // Overlap check (exclude this booking)
+    // User-friendly overlap check. The stronger concurrent multi-hour invariant
+    // is handled in the separate slot-lock remediation lane.
     const sameDayBookings = await Booking.find({
       court: booking.court._id,
       date,
@@ -119,76 +141,73 @@ export async function PUT(request, { params }) {
       _id: { $ne: id },
     }).select('start_time duration');
 
-    const hasOverlap = sameDayBookings.some((b) => {
-      const s = toMinutes(b.start_time);
-      const e = s + b.duration * 60;
-      return newStart < e && newEnd > s;
+    const hasOverlap = sameDayBookings.some((existingBooking) => {
+      const existingStart = toMinutes(existingBooking.start_time);
+      const existingEnd = existingStart + existingBooking.duration * 60;
+      return newStart < existingEnd && newEnd > existingStart;
     });
 
     if (hasOverlap) {
-      return NextResponse.json({ error: 'This slot is already booked. Choose a different time.' }, { status: 409 });
+      return NextResponse.json(
+        { error: 'This slot is already booked. Choose a different time.' },
+        { status: 409 }
+      );
     }
 
     booking.date = date;
     booking.start_time = start_time;
     booking.duration = duration;
     booking.total_price = booking.court.price_per_hour * duration;
-        await booking.save();
+    booking.communicationRevision = Math.max(1, Number(booking.communicationRevision || 1)) + 1;
+    await booking.save();
 
-          try {
-            let emailSent = false;
-            if (isResendBookingConfirmationConfigured()) {
-              const resendResponse = await sendResendConfirmation({
-                id: booking._id.toString(),
-                date: booking.date,
-                time: booking.start_time,
-                court: booking.court.name,
-                amount: booking.total_price,
-                type: 'update'
-              }, session.user.email);
-              
-              if (resendResponse.success) {
-                emailSent = true;
-              } else {
-                console.warn('Resend update email failed, falling back to Nodemailer:', resendResponse.error);
-              }
-            }
-      
-            if (!emailSent) {
-              await sendBookingConfirmation({
-                to: session.user.email,
-                name: session.user.name,
-                courtName: booking.court.name,
-                date: booking.date,
-                start_time: booking.start_time,
-                duration: booking.duration,
-                total_price: booking.total_price,
-                type: 'update',
-              });
-            }
-          } catch (emailError) {
-            console.error('Failed to send update email:', emailError);
-          }
+    const customerName = booking.user?.name || session.user.name || 'Player';
+    const customerEmail = booking.contactEmail || booking.user?.email || session.user.email || null;
+    const customerPhone = booking.contactPhone || booking.user?.phone || null;
 
-          return NextResponse.json(booking, { status: 200 });
+    let communicationReceipts = [];
+    try {
+      communicationReceipts = await dispatchBookingCommunications({
+        booking,
+        court: booking.court,
+        customerName,
+        customerEmail,
+        customerPhone,
+        preferredChannel: booking.preferredChannel || 'whatsapp',
+      });
+    } catch (communicationError) {
+      console.error('Booking updated but communication dispatch failed:', communicationError);
+      communicationReceipts = [
+        { status: 'failed', error: communicationError?.message || 'Communication dispatch failed' },
+      ];
+    }
+
+    return NextResponse.json(
+      { ...booking.toObject(), communicationReceipts },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('PUT /api/bookings/:id error:', error);
+    if (error?.code === 11000) {
+      return NextResponse.json(
+        { error: 'That court slot has just been reserved. Please choose another time.' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 });
   }
 }
 
 // DELETE /api/bookings/:id — cancel a booking (owner or admin)
-export async function DELETE(request, { params }) {
+export async function DELETE(_request, { params }) {
   try {
     const { id } = await params;
 
-    // Validate ObjectId format
     if (!/^[a-fA-F0-9]{24}$/.test(id)) {
       return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
     }
 
     const session = await getAuthSession();
-
     if (!session) {
       return NextResponse.json({ error: 'You must be logged in' }, { status: 401 });
     }
@@ -200,11 +219,13 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    // Allow booking owner or admin to cancel
-    const isOwner = booking.user && booking.user.toString() === session.user.id;
+    const isOwner = Boolean(booking.user) && booking.user.toString() === session.user.id;
     const isAdmin = requireRole(session, 'admin');
     if (!isOwner && !isAdmin) {
-      return NextResponse.json({ error: 'You are not authorised to cancel this booking' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'You are not authorised to cancel this booking' },
+        { status: 403 }
+      );
     }
 
     booking.status = 'cancelled';

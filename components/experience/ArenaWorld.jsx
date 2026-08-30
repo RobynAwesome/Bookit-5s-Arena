@@ -167,14 +167,19 @@ function RealityBeacon({ sourceState }) {
 }
 
 function ArenaScene({ chapter, sourceState, quality }) {
+  const cameraDestination = useRef(new THREE.Vector3(...CAMERA_SHOTS[0].position));
   const lookAt = useRef(new THREE.Vector3(...CAMERA_SHOTS[0].target));
+  const lookAtDestination = useRef(new THREE.Vector3(...CAMERA_SHOTS[0].target));
   const sceneGroup = useRef();
 
   useFrame((state, delta) => {
     const shot = CAMERA_SHOTS[Math.min(chapter, CAMERA_SHOTS.length - 1)];
     const alpha = 1 - Math.exp(-2.2 * delta);
-    state.camera.position.lerp(new THREE.Vector3(...shot.position), alpha);
-    lookAt.current.lerp(new THREE.Vector3(...shot.target), alpha);
+
+    cameraDestination.current.set(...shot.position);
+    lookAtDestination.current.set(...shot.target);
+    state.camera.position.lerp(cameraDestination.current, alpha);
+    lookAt.current.lerp(lookAtDestination.current, alpha);
     state.camera.lookAt(lookAt.current);
 
     if (sceneGroup.current) {
@@ -213,7 +218,7 @@ function ArenaScene({ chapter, sourceState, quality }) {
 
 export default function ArenaWorld({ chapter = 0, sourceState = "unavailable", quality = "full" }) {
   return (
-    <div className="absolute inset-0" aria-hidden="true">
+    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
       <Canvas
         camera={{ position: CAMERA_SHOTS[0].position, fov: 43, near: 0.1, far: 80 }}
         dpr={quality === "full" ? [1, 1.55] : 1}

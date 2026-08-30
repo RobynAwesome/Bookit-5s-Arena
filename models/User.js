@@ -46,11 +46,11 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
-    // Communication preference: 'email' | 'whatsapp' | 'sms' — mandatory pick one
+    // Communication preference: WhatsApp is the product default; users may override.
     communicationPreference: {
       type: String,
       enum: ['email', 'whatsapp', 'sms'],
-      default: 'email',
+      default: 'whatsapp',
     },
     // Newsletter opt-in — defaults to true for new users (auto-subscribe)
     newsletterOptIn: {

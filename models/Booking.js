@@ -17,6 +17,33 @@ const BookingSchema = new mongoose.Schema(
     guestName:  { type: String, default: null },
     guestEmail: { type: String, default: null },
     guestPhone: { type: String, default: null },
+    // Per-booking communication snapshot. This is deliberately persisted so a
+    // later profile edit cannot rewrite the evidence of where this reservation
+    // was supposed to be delivered.
+    preferredChannel: {
+      type: String,
+      enum: ['whatsapp', 'email', 'sms'],
+      default: 'whatsapp',
+    },
+    contactEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: null,
+    },
+    contactPhone: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    // Revision 1 is the original reservation. Each material reschedule bumps
+    // this number so a fresh set of messages can be sent while retries within
+    // the same revision remain idempotent.
+    communicationRevision: {
+      type: Number,
+      min: 1,
+      default: 1,
+    },
     date: {
       type: String, // stored as 'YYYY-MM-DD'
       required: [true, 'Booking date is required'],
@@ -39,6 +66,14 @@ const BookingSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
       default: 'pending',
+    },
+    // Occupancy is a separate invariant from customer-visible status. New and
+    // touched active bookings set this true; cancellation sets it false. The
+    // bookingOccupancy helper owns the active-start partial unique index so it
+    // can safely migrate the legacy unconditional unique index at runtime.
+    occupancyActive: {
+      type: Boolean,
+      default: true,
     },
     paymentStatus: {
       type: String,
@@ -66,8 +101,11 @@ const BookingSchema = new mongoose.Schema(
 );
 
 // ── Indexes ─────────────────────────────────────────────────────────────────
-// Prevent double bookings: same court, same date, same start_time
-BookingSchema.index({ court: 1, date: 1, start_time: 1 }, { unique: true });
+// IMPORTANT: the old unconditional unique index on
+// { court, date, start_time } is intentionally not declared here. It prevents
+// a cancelled slot from ever being reused. lib/bookings/bookingOccupancy.js
+// migrates that legacy index to an active-booking-only partial unique index and
+// also enforces every occupied hourly segment through BookingSlot.
 
 // Fast lookup of all bookings for a user (GET /api/bookings sorts by date asc)
 BookingSchema.index({ user: 1, date: 1 });
@@ -94,8 +132,6 @@ BookingSchema.index(
   { sparse: true, partialFilterExpression: { paystackLastEventId: { $gt: '' } } },
 );
 
-// In dev, hot-reload can leave a stale model in mongoose.models with the old schema.
-// Always delete and re-register so schema changes (new fields, new enum values) take effect immediately.
 if (mongoose.models.Booking) {
   try { mongoose.deleteModel('Booking'); } catch { /* ignore */ }
 }

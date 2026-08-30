@@ -625,7 +625,7 @@ export default function LocalityScene({
           </p>
         </div>
         <div className={`rounded-full border px-3 py-2 text-[8px] font-black uppercase tracking-[0.16em] backdrop-blur-md ${footballReady ? 'border-green-300/30 bg-green-300/12 text-green-200' : 'border-amber-300/30 bg-amber-300/12 text-amber-100'}`}>
-          {footballReady ? 'Play ready' : 'Watch conditions'}
+          {footballReady ? 'Good conditions' : 'Watch conditions'}
         </div>
       </div>
 

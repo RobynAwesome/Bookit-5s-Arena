@@ -6,6 +6,11 @@ import Booking from '@/models/Booking';
 import Court from '@/models/Court';
 import User from '@/models/User';
 import { dispatchBookingCommunications } from '@/lib/bookings/dispatchBookingCommunications';
+import {
+  createBookingWithOccupancy,
+  isBookingOccupancyConflict,
+  isBookingTransactionUnavailable,
+} from '@/lib/bookings/bookingOccupancy';
 import { rateLimit } from '@/lib/rateLimit';
 import { verifyBotRequest } from '@/lib/security/botid';
 import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
@@ -150,6 +155,8 @@ export async function POST(request) {
       );
     }
 
+    // This remains as a user-friendly fast rejection and protects untouched
+    // legacy bookings. It is not the concurrency authority; BookingSlot is.
     const sameDayBookings = await Booking.find({
       court: courtId,
       date,
@@ -171,9 +178,10 @@ export async function POST(request) {
 
     const total_price = court.price_per_hour * duration;
 
-    // Authoritative reservation first. Communication happens only after this
-    // document exists and is therefore visible to the admin booking query.
-    const booking = await Booking.create({
+    // Booking + every occupied hourly slot commit as one MongoDB transaction.
+    // If any segment is already owned, the unique BookingSlot index aborts the
+    // whole transaction; no orphan Booking document can survive the conflict.
+    const booking = await createBookingWithOccupancy({
       court: courtId,
       user: session.user.id,
       preferredChannel,
@@ -210,10 +218,16 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error('POST /api/bookings error:', error);
-    if (error?.code === 11000) {
+    if (isBookingOccupancyConflict(error)) {
       return NextResponse.json(
-        { error: 'That court slot has just been reserved. Please choose another time.' },
+        { error: 'That court time overlaps a reservation that was just secured. Please choose another slot.' },
         { status: 409 }
+      );
+    }
+    if (isBookingTransactionUnavailable(error)) {
+      return NextResponse.json(
+        { error: 'The reservation safety lock is unavailable. No booking was created.' },
+        { status: 503 }
       );
     }
     return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 });

@@ -18,6 +18,7 @@
     "validate:booking-occupancy": "node scripts/validate-booking-occupancy-contract.mjs",
     "validate:booking-occupancy:mongo": "node scripts/validate-booking-occupancy-mongo.mjs",
     "validate:transaction-integration": "node scripts/validate-fivesarena-transaction-integration.mjs",
+    "validate:arena-chronicle": "node scripts/validate-arena-chronicle.mjs",
     "fixtures:health-check": "node scripts/fixtures-health-check.mjs",
     "validate:fixtures-vault": "node scripts/validate-fixtures-vault-shape.mjs",
     "test:bdd:fixtures:run": "node --import tsx ./node_modules/@cucumber/cucumber/bin/cucumber.js --config tests/bdd/cucumber.mjs",
@@ -76,6 +77,7 @@
     "uuid": ">=11.1.1",
     "postcss": ">=8.5.6",
     "js-yaml": ">=3.13.1",
-    "@babel/core": ">=7.29.6","nodemailer": "^6.9.16"
+    "@babel/core": ">=7.29.6",
+    "nodemailer": "^6.9.16"
   }
 }

@@ -80,5 +80,7 @@ jobs:
           MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_bmp?replicaSet=rs0&directConnection=true'
         run: npm run validate:booking-occupancy:mongo
 
-      - name: Production build
+      - name: Production build against verified CI database
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_bmp?replicaSet=rs0&directConnection=true'
         run: npm run build

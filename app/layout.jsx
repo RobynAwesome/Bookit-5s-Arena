@@ -8,13 +8,13 @@ import { FeatureAccessProvider } from "@/hooks/useFeatureAccess";
 import "../assets/styles/globals.css";
 
 // Lazy-load non-critical client components to reduce initial bundle
-const SoccerBallMenu = dynamic(() => import("@/components/SoccerBallMenu"));
 const NewsletterPopup = dynamic(() => import("@/components/NewsletterPopup"));
 const AnalyticsTracker = dynamic(() => import("@/components/AnalyticsTracker"));
 const CookieBanner = dynamic(() => import("@/components/CookieBanner"));
 const PageTransition = dynamic(() => import("@/components/PageTransition"));
 const Analytics = dynamic(() => import("@vercel/analytics/react").then(m => m.Analytics));
 const OfflineBanner = dynamic(() => import("@/packages/ui/src/OfflineBanner"));
+const ContextualFloatingNavigation = dynamic(() => import("@/components/ContextualFloatingNavigation"));
 
 const SITE_URL =
   process.env.NODE_ENV === "production"
@@ -74,7 +74,6 @@ export const viewport = {
 };
 
 const ScrollToTop = dynamic(() => import("@/components/ScrollToTop"));
-const BottomNavbar = dynamic(() => import("@/components/BottomNavbar"));
 
 const RootLayout = ({ children }) => {
   return (
@@ -145,8 +144,7 @@ const RootLayout = ({ children }) => {
               </main>
               <TruthFooter />
               <ScrollToTop />
-              <SoccerBallMenu />
-              <BottomNavbar />
+              <ContextualFloatingNavigation />
               <NewsletterPopup />
               <CookieBanner />
             </ThemeProvider>

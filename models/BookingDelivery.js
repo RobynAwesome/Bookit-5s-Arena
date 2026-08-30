@@ -8,6 +8,12 @@ const BookingDeliverySchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    revision: {
+      type: Number,
+      min: 1,
+      default: 1,
+      required: true,
+    },
     recipientType: {
       type: String,
       enum: ['user', 'business'],
@@ -65,14 +71,14 @@ const BookingDeliverySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// One logical delivery receipt per booking/recipient/channel/purpose.
-// Retries update this document instead of emitting duplicate logical receipts.
+// One logical receipt per booking revision / recipient / channel / purpose.
+// A real reschedule bumps revision; retries of the same reservation state do not.
 BookingDeliverySchema.index(
-  { booking: 1, recipientType: 1, channel: 1, purpose: 1 },
+  { booking: 1, revision: 1, recipientType: 1, channel: 1, purpose: 1 },
   { unique: true, name: 'booking_delivery_idempotency' }
 );
 
-BookingDeliverySchema.index({ booking: 1, createdAt: 1 });
+BookingDeliverySchema.index({ booking: 1, revision: 1, createdAt: 1 });
 
 if (mongoose.models.BookingDelivery) {
   try { mongoose.deleteModel('BookingDelivery'); } catch { /* ignore hot reload */ }

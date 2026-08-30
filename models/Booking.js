@@ -67,6 +67,14 @@ const BookingSchema = new mongoose.Schema(
       enum: ['pending', 'confirmed', 'cancelled'],
       default: 'pending',
     },
+    // Occupancy is a separate invariant from customer-visible status. New and
+    // touched active bookings set this true; cancellation sets it false. The
+    // bookingOccupancy helper owns the active-start partial unique index so it
+    // can safely migrate the legacy unconditional unique index at runtime.
+    occupancyActive: {
+      type: Boolean,
+      default: true,
+    },
     paymentStatus: {
       type: String,
       enum: ['unpaid', 'paid', 'refunded', 'reserved'],
@@ -93,9 +101,11 @@ const BookingSchema = new mongoose.Schema(
 );
 
 // ── Indexes ─────────────────────────────────────────────────────────────────
-// Prevent identical start-time duplicates. A stronger multi-hour concurrency
-// invariant is handled in a separate booking-slot lane.
-BookingSchema.index({ court: 1, date: 1, start_time: 1 }, { unique: true });
+// IMPORTANT: the old unconditional unique index on
+// { court, date, start_time } is intentionally not declared here. It prevents
+// a cancelled slot from ever being reused. lib/bookings/bookingOccupancy.js
+// migrates that legacy index to an active-booking-only partial unique index and
+// also enforces every occupied hourly segment through BookingSlot.
 
 // Fast lookup of all bookings for a user (GET /api/bookings sorts by date asc)
 BookingSchema.index({ user: 1, date: 1 });

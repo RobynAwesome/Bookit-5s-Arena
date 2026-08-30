@@ -6,39 +6,31 @@
 > **Execution:** CRUD → SWFUS → BP → **BMP** → POCvsFOC → KPCB+
 > **Stacked base:** `forge/booking-communications-contract` @ `c520d2ef0172a8467f11bfb59c713ae61e457692`
 > **Upstream production lineage:** `a014a98f53e91b99de061c48f962350a006cf154`
+> **Review:** `RobynAwesome/Bookit-5s-Arena#15`
 
 ## BMP BREAKING-MODEL POINT
 
-The previous availability model performed a read-time overlap check and then wrote a Booking. That is insufficient under concurrency:
+The former availability model performed a read-time overlap check and then wrote a Booking. Under concurrency, two overlapping requests could both pass the read before either write. The legacy exact-start unique index also remained effective for cancelled bookings, preventing legitimate exact-time reuse.
 
-- request A: 10:00 for 2h → occupies 10:00 + 11:00;
-- request B: 11:00 for 1h → occupies 11:00;
-- both can read before either writes;
-- the legacy unique Booking index only compared exact `start_time`, so 10:00 and 11:00 did not collide.
+**BMP result:** availability cannot remain a calculated opinion. **Occupancy is now an atomic database fact.**
 
-BMP result: **availability cannot remain a calculated opinion. Occupancy must be an atomic database fact.**
+## IMPLEMENTED INVARIANT
 
-A second breaking point was found in the legacy unique index: `{ court, date, start_time }` remained unique even after `status: cancelled`, so an exact cancelled start time could stay blocked forever.
+### Atomic hourly ownership
 
-## IMPLEMENTED MODEL
-
-### 1. Atomic hourly ownership
-
-Added `models/BookingSlot.js` with unique database key:
+`models/BookingSlot.js` owns a unique database key:
 
 `court + date + slot_time`
 
-A booking owns one row per occupied hour. Example:
+Example:
 
 `10:00 × 3h -> 10:00, 11:00, 12:00`
 
-Therefore `10:00 × 2h` and `11:00 × 1h` must collide on the same 11:00 database key.
+`10:00 × 2h` and `11:00 × 1h` therefore collide on the same `11:00` database key.
 
-### 2. Transaction authority
+### Transaction authority
 
-Added `lib/bookings/bookingOccupancy.js`.
-
-All occupancy mutations execute through MongoDB `withTransaction()` using snapshot read concern and majority write concern. No fallback creates a Booking without its slot rows.
+`lib/bookings/bookingOccupancy.js` is the sole occupancy mutation engine. Booking state and hourly locks commit through MongoDB `withTransaction()` using snapshot read concern and majority write concern. There is **no non-transactional fallback**.
 
 Governed mutations:
 
@@ -48,111 +40,132 @@ Governed mutations:
 4. owner/admin cancellation;
 5. admin status transition / cancelled-booking restore.
 
-Communication dispatch remains outside and after the committed reservation transaction.
+Communication dispatch remains after the committed reservation transaction.
 
-### 3. Cancellation-safe index migration
+### Cancellation-safe start uniqueness
 
-Before occupancy writes, the helper:
+Before writes the occupancy helper:
 
-1. ensures `BookingSlot` unique indexes exist;
-2. finds/removes the legacy unconditional `{ court, date, start_time }` Booking index;
-3. creates `active_booking_start_unique` with `partialFilterExpression: { occupancyActive: true }`.
+1. ensures the Booking collection exists;
+2. ensures `BookingSlot` unique indexes exist;
+3. removes the legacy unconditional `{ court, date, start_time }` Booking index when present;
+4. creates `active_booking_start_unique` with `partialFilterExpression: { occupancyActive: true }`.
 
-`Booking.occupancyActive` is true for active reservations and false on cancellation.
+Cancellation sets `occupancyActive=false` and releases hourly locks in the same transaction. Exact cancelled starts can therefore be reused.
 
-This preserves exact-start defense while allowing a cancelled slot to be legitimately reused.
+### Legacy compatibility
 
-### 4. Legacy compatibility without weakening the invariant
-
-The existing Booking overlap query remains as:
+The existing read-time overlap query remains only as:
 
 - fast user-facing rejection;
 - protection for untouched legacy Booking documents that predate BookingSlot.
 
-It is no longer the concurrency authority.
+It is not the concurrency authority. New/touched active bookings receive hourly BookingSlot ownership; admin active-state transitions also refresh/backfill those locks.
 
-Every new or touched active booking receives hourly BookingSlot rows. Admin active-status transitions also refresh/backfill slot rows for legacy bookings.
+### Rollback laws
 
-### 5. Reschedule rollback semantics
+**Reschedule:** Booking changes + slot replacement occur in one transaction. A conflict rolls back both the new Booking state and deletion of the old locks.
 
-Reschedule changes Booking fields and replaces its hourly locks in one transaction.
-
-If any new hour is already owned:
-
-- transaction aborts;
-- the new Booking state is not committed;
-- deletion of old locks is rolled back;
-- original reservation remains authoritative.
-
-### 6. Restore semantics
-
-Cancelled → pending/confirmed must reacquire every hourly slot in the same transaction. If another booking has taken any hour, restore returns conflict and status remains cancelled.
+**Restore:** cancelled → pending/confirmed must reacquire every hourly lock. If any released hour has since been taken, restore conflicts and the Booking remains cancelled/non-occupying.
 
 ## PROOF SURFACES
 
-Pure slot law:
+### Pure/static law
 
 - `lib/bookings/bookingOccupancySlots.mjs`
-
-Dependency-free validator:
-
-- `npm run validate:booking-occupancy`
 - `scripts/validate-booking-occupancy-contract.mjs`
+- command: `npm run validate:booking-occupancy`
 
-Validator checks:
+Static validator proves:
 
-- hourly expansion examples;
-- overlap vs adjacency;
-- invalid half-hour/day-crossing inputs;
-- unique BookingSlot index presence;
-- MongoDB transaction usage;
-- active-only start index migration;
-- removal of legacy unconditional schema uniqueness;
-- registered/guest create routing;
-- reschedule/cancel routing;
-- admin status routing;
-- absence of direct bypass writes in those routes.
+- exact hourly expansion;
+- overlap vs legal adjacency;
+- invalid half-hour/day-crossing rejection;
+- BookingSlot unique key;
+- transaction usage;
+- active-only exact-start index migration;
+- removal of the unconditional legacy schema uniqueness;
+- all five authoritative mutation routes use the shared engine;
+- registered/guest direct `Booking.create()` bypass is absent;
+- admin direct status `findByIdAndUpdate()` bypass is absent.
 
-CI gate:
+### Real MongoDB transaction witness
 
-- `.github/workflows/booking-occupancy-contract.yml`
-- zero secrets required;
-- runs validator plus `node --check` on authoritative server files.
-- first push run ID: `33297490828`.
+- `scripts/validate-booking-occupancy-mongo.mjs`
+- command: `npm run validate:booking-occupancy:mongo`
+- runs against disposable MongoDB 7 single-node replica set in GitHub Actions;
+- uses the same `lib/bookings/bookingOccupancy.js` engine as the API routes;
+- no production secret or mock database is used.
 
-## EVIDENCE STATE
+Witness assertions returned `PASS`:
 
-### Source-level
+1. concurrent overlap → exactly one commit + one conflict;
+2. losing transaction leaves **no orphan Booking**;
+3. cancellation releases all slot locks;
+4. exact cancelled start is reusable;
+5. failed reschedule preserves original Booking + original locks;
+6. failed cancelled-booking restore preserves cancelled state and leaves no partial locks;
+7. adjacent non-overlapping bookings both commit.
 
-`PREPARED_AND_GATED`
+## CI RECEIPTS
 
-### CI
+### Run `33297688814`
 
-The first branch push successfully created GitHub Actions run `33297490828`. Its final conclusion must be read before promotion; queued/running is not PASS.
+- static contract: PASS;
+- syntax checks: PASS;
+- `npm ci`: PASS;
+- MongoDB replica set boot: PASS;
+- real Mongo concurrency witness: PASS;
+- production Next build: PASS.
 
-### Runtime database witness
+That build surfaced the existing homepage warning that Mongo was not configured during static generation because the build step did not inherit the CI database URI.
 
-`NOT_YET_VALIDATED`
+### Final latest-head run `33297770948`
 
-Required witness is a real transaction-capable MongoDB environment proving:
+Head tested: `39e965a3aeeacc7facff7464a52635d02b5fbb2b`.
 
-1. overlapping concurrent requests produce one commit + one conflict;
-2. no orphan Booking survives the losing transaction;
-3. cancelling releases slot ownership;
-4. exact cancelled start time can be rebooked;
-5. failed reschedule preserves original booking and original locks;
-6. cancelled restore fails if any hour has been taken.
+- static contract: PASS;
+- authoritative syntax checks: PASS;
+- locked dependency install: PASS;
+- MongoDB replica set: PASS;
+- real concurrency witness: PASS;
+- **production Next build against the verified CI database: PASS**;
+- optimized build compiled successfully and generated all 67 static pages;
+- the previous missing-Mongo court-inventory warning is absent.
 
-## POC / FOC
+## POC / FOC STATE
 
-- **Model/BMP remediation:** implemented on the stacked branch.
-- **Static CI POC:** pending final workflow conclusion.
-- **Database concurrency POC:** `NOT_YET_VALIDATED` until live transaction witness.
-- **Production FOC:** blocked until PR1 Court source + PR2 communications + this occupancy lane are authorized upstream and the full reservation witness passes.
+### Occupancy mechanism
+
+`POC_VALIDATED`
+
+Reason: both deterministic contract proof and a real transaction-capable MongoDB concurrency witness passed against the actual occupancy implementation.
+
+### Production FivesArena transaction chain
+
+`NOT_YET_PRODUCTION_VALIDATED`
+
+The occupancy mechanism is proven, but production promotion still requires the already-prepared transaction stack to be authorized upstream:
+
+1. PR1 / fork #13 — authoritative Court source contract;
+2. PR2 / fork #14 — booking communication receipts;
+3. PR3 / fork #15 — atomic booking occupancy.
+
+Then one real production-lineage reservation witness must prove:
+
+`court source -> reservation -> business visibility -> communication receipts -> later staff payment state`
+
+No merge/deploy is claimed from this fork review lane.
+
+## KPCB+ FINDINGS
+
+`npm ci` currently reports **7 dependency advisories: 1 moderate, 6 high**. PR15 changes no dependency versions, so these advisories are pre-existing dependency debt rather than occupancy-package additions. They must not be silently forgotten; schedule a separate bounded dependency-security lane instead of mixing breaking upgrades into this P0 transaction invariant.
+
+GitHub Actions also warns that `actions/checkout@v4` and `actions/setup-node@v4` target the deprecated Node 20 action runtime and are being forced onto Node 24 by the runner. The application itself is explicitly tested on Node 22 in this workflow.
 
 ## NEXT ADMISSIBLE ACTION
 
-1. Read CI run `33297490828` to PASS/failure and fix any failure rather than explain it away.
-2. Open the bounded stacked review PR against `forge/booking-communications-contract`.
-3. Do not merge/deploy from this branch without the database concurrency witness.
-4. After upstream authorization, execute the real collision/cancel/rebook/reschedule/restore witness before `POC_VALIDATED`.
+1. Keep PR15 stacked and unmerged until PR2 order is preserved.
+2. Preserve upstream truth: `Kopano-Labs/Bookit-5s-Arena/main` remains `a014a98f53e91b99de061c48f962350a006cf154` as of this receipt.
+3. Move next to the upstream integration / full transaction witness lane; do not reopen the proven occupancy model unless new evidence breaks it.
+4. Track dependency-security remediation separately so a package upgrade cannot destabilize the now-proven booking invariant.

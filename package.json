@@ -14,6 +14,7 @@
     "validate:offline-sync:shape": "node --env-file=.env.local scripts/validate-offline-sync-shape.mjs",
     "validate:court-assets": "node scripts/validate-court-assets.mjs",
     "validate:booking-communications": "node scripts/validate-booking-communications-contract.mjs",
+    "validate:booking-occupancy": "node scripts/validate-booking-occupancy-contract.mjs",
     "fixtures:health-check": "node scripts/fixtures-health-check.mjs",
     "validate:fixtures-vault": "node scripts/validate-fixtures-vault-shape.mjs",
     "test:bdd:fixtures:run": "node --import tsx ./node_modules/@cucumber/cucumber/bin/cucumber.js --config tests/bdd/cucumber.mjs",
@@ -75,4 +76,3 @@
     "@babel/core": ">=7.29.6","nodemailer": "^6.9.16"
   }
 }
-

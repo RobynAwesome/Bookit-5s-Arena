@@ -1,128 +1,158 @@
-# NOW.md — FivesArena Booking Communications Lane
+# NOW.md — FivesArena Atomic Booking Occupancy Lane
 
 > **Current-state authority:** repository-root `NOW.md`
 > **Updated:** 2026-08-30 (SAST)
 > **Constraint:** `I_AM_STATELESS_RENTER_NOT_LANDLORD`
-> **Baseline:** upstream production lineage `a014a98f53e91b99de061c48f962350a006cf154`
+> **Execution:** CRUD → SWFUS → BP → **BMP** → POCvsFOC → KPCB+
+> **Stacked base:** `forge/booking-communications-contract` @ `c520d2ef0172a8467f11bfb59c713ae61e457692`
+> **Upstream production lineage:** `a014a98f53e91b99de061c48f962350a006cf154`
 
-## CURRENT STATE — 2026-08-30
+## BMP BREAKING-MODEL POINT
 
-### Objective
+The previous availability model performed a read-time overlap check and then wrote a Booking. That is insufficient under concurrency:
 
-Implement and prove the booking communication contract that was described in historical upstream PR #17 but not actually implemented by that PR's merged patch.
+- request A: 10:00 for 2h → occupies 10:00 + 11:00;
+- request B: 11:00 for 1h → occupies 11:00;
+- both can read before either writes;
+- the legacy unique Booking index only compared exact `start_time`, so 10:00 and 11:00 did not collide.
 
-Canonical target:
+BMP result: **availability cannot remain a calculated opinion. Occupancy must be an atomic database fact.**
 
-1. WhatsApp is the default operational reservation channel for both user and business.
-2. User may select Email or SMS instead for their operational updates.
-3. Reservation receipt email is always attempted for both user and business after authoritative booking persistence.
-4. Guest and registered booking paths behave consistently.
-5. No channel may report a production success from simulation/mock mode.
-6. Delivery attempts are idempotent and persisted per booking, recipient, channel and purpose.
-7. Communication sequencing follows authoritative reservation/payment state, not UI optimism.
-8. Staff can query and retry the communication receipts for the exact persisted booking.
+A second breaking point was found in the legacy unique index: `{ court, date, start_time }` remained unique even after `status: cancelled`, so an exact cancelled start time could stay blocked forever.
 
-### Source-proven upstream gaps
+## IMPLEMENTED MODEL
 
-On upstream main `a014a98f53e91b99de061c48f962350a006cf154`:
+### 1. Atomic hourly ownership
 
-- Registered `/api/bookings` could create `status: pending` / `paymentStatus: unpaid` and immediately send user-facing "confirmed" communication.
-- Registered route did not notify the business.
-- Guest `/api/bookings/guest` persisted the booking but emitted no user or business communications.
-- `models/Booking.js` had no per-booking preferred-channel/contact snapshot or delivery evidence.
-- `lib/integrations/whatsapp.js` could return `{ success: true, mode: "simulation" }`.
-- Existing email copy could call a pay-at-venue reservation "confirmed" and label the amount "Amount Paid".
-- Current production booking UX is pay-at-venue only; Stripe checkout/verification routes are disabled. Therefore reservation persistence and payment confirmation are separate states.
+Added `models/BookingSlot.js` with unique database key:
 
-## IMPLEMENTED ON THIS BRANCH
+`court + date + slot_time`
 
-### Authoritative reservation sequencing
+A booking owns one row per occupied hour. Example:
 
-- Registered and guest routes persist the `Booking` first.
-- Current reservation state is `status: pending`, `paymentStatus: reserved`.
-- Communications run only after the booking exists and is visible to the admin booking query.
-- Registered bookings resolve the current User record instead of relying only on a possibly stale session contact copy.
-- Booking snapshots `preferredChannel`, `contactEmail`, and `contactPhone`.
-- Duplicate booking-key races return HTTP `409` rather than a generic server error.
+`10:00 × 3h -> 10:00, 11:00, 12:00`
 
-### User + business communication policy
+Therefore `10:00 × 2h` and `11:00 × 1h` must collide on the same 11:00 database key.
 
-Always-on attempts after persistence:
+### 2. Transaction authority
 
-- user email reservation receipt;
-- business email reservation receipt;
-- business WhatsApp reservation notice.
+Added `lib/bookings/bookingOccupancy.js`.
 
-User operational preference:
+All occupancy mutations execute through MongoDB `withTransaction()` using snapshot read concern and majority write concern. No fallback creates a Booking without its slot rows.
 
-- WhatsApp by default;
-- Email may be selected and reuses the always-on email receipt rather than sending a duplicate email;
-- SMS may be selected through the provider-neutral `SMS_WEBHOOK_URL` adapter.
+Governed mutations:
 
-### Delivery evidence / idempotency
+1. registered booking creation;
+2. guest booking creation;
+3. reschedule;
+4. owner/admin cancellation;
+5. admin status transition / cancelled-booking restore.
 
-- Added `models/BookingDelivery.js`.
-- Logical idempotency key is the unique tuple:
-  `booking + recipientType + channel + purpose`.
-- Delivery states: `queued | sending | sent | failed | skipped`.
-- Provider, provider message ID, attempts, timestamps and error are persisted.
-- Re-dispatch updates the same logical receipt rather than creating another one.
-- Concurrent duplicate dispatches are suppressed while one receipt is actively `sending`.
-- A `sending` claim older than five minutes can be reclaimed after a crashed process.
-- Missing destination/provider is persisted as `skipped` or `failed`; it is not silently discarded.
+Communication dispatch remains outside and after the committed reservation transaction.
 
-### Provider truth hardening
+### 3. Cancellation-safe index migration
 
-- Explicit WhatsApp simulation is a no-send mode and returns `success: false`.
-- A configured WhatsApp webhook or Evolution API must return successful HTTP status before the adapter reports `sent`.
-- SMS missing provider configuration returns an explicit skipped receipt.
-- Reservation email copy says reservation / amount due / pay at venue and explicitly does not claim payment unless payment state is actually paid.
+Before occupancy writes, the helper:
 
-### Business observability / recovery
+1. ensures `BookingSlot` unique indexes exist;
+2. finds/removes the legacy unconditional `{ court, date, start_time }` Booking index;
+3. creates `active_booking_start_unique` with `partialFilterExpression: { occupancyActive: true }`.
 
-- `GET /api/admin/bookings/[id]/deliveries` returns the booking communication timeline and status summary.
-- `POST /api/admin/bookings/[id]/deliveries/retry` re-runs the same idempotent dispatcher for non-cancelled bookings; already-sent logical receipts remain suppressed.
+`Booking.occupancyActive` is true for active reservations and false on cancellation.
 
-### Booking UX
+This preserves exact-start defense while allowing a cancelled slot to be legitimately reused.
 
-- Existing BookingForm visual language, animations, guest flow, tooltips, spinners and button treatment were preserved after review removed an earlier unnecessary style-drift pass.
-- WhatsApp / Email / SMS selector added with WhatsApp preselected.
-- UI states that the reservation receipt is always emailed to customer and venue.
-- Registered users can supply/override the phone used for WhatsApp or SMS; backend can fall back to the current stored User phone.
-- Communication degradation does not destroy the already-persisted reservation and is surfaced to the user.
-- Reservation success copy separates court reservation from later staff-recorded payment confirmation.
+### 4. Legacy compatibility without weakening the invariant
 
-### Offline boundary preserved
+The existing Booking overlap query remains as:
 
-`/api/v1/sync` currently stores an accepted offline booking intent as `OfflineSyncEvent`; it does not create a real `Booking` or hold a court slot. This branch preserves that evidence class rather than silently promoting offline intent into transactional state.
+- fast user-facing rejection;
+- protection for untouched legacy Booking documents that predate BookingSlot.
 
-## REVIEW / VALIDATION RECEIPTS
+It is no longer the concurrency authority.
 
-- Review PR: `RobynAwesome/Bookit-5s-Arena#14`
-- Review base: `upstream-main-a014a98` -> exact upstream SHA `a014a98f53e91b99de061c48f962350a006cf154`.
-- Branch is currently reviewable/mergeable inside the fork; it is not production.
-- Added dependency-free static validator:
-  `npm run validate:booking-communications`.
-- The isolated execution runtime cannot resolve public GitHub to clone the exact branch, so this validator has **not** been falsely recorded as executed/passing.
-- Latest PR head currently has **no GitHub Actions workflow run**. Absence of CI is not a green receipt.
-- Automated Codex review bot reported that its code-review usage quota is exhausted; that is also not a validation receipt.
-- The connected GitHub integration returns HTTP `403 Resource not accessible by integration` for issue/branch/PR writes against `Kopano-Labs/Bookit-5s-Arena`; therefore the review surface is in the writable fork and upstream production remains unchanged.
+Every new or touched active booking receives hourly BookingSlot rows. Admin active-status transitions also refresh/backfill slot rows for legacy bookings.
+
+### 5. Reschedule rollback semantics
+
+Reschedule changes Booking fields and replaces its hourly locks in one transaction.
+
+If any new hour is already owned:
+
+- transaction aborts;
+- the new Booking state is not committed;
+- deletion of old locks is rolled back;
+- original reservation remains authoritative.
+
+### 6. Restore semantics
+
+Cancelled → pending/confirmed must reacquire every hourly slot in the same transaction. If another booking has taken any hour, restore returns conflict and status remains cancelled.
+
+## PROOF SURFACES
+
+Pure slot law:
+
+- `lib/bookings/bookingOccupancySlots.mjs`
+
+Dependency-free validator:
+
+- `npm run validate:booking-occupancy`
+- `scripts/validate-booking-occupancy-contract.mjs`
+
+Validator checks:
+
+- hourly expansion examples;
+- overlap vs adjacency;
+- invalid half-hour/day-crossing inputs;
+- unique BookingSlot index presence;
+- MongoDB transaction usage;
+- active-only start index migration;
+- removal of legacy unconditional schema uniqueness;
+- registered/guest create routing;
+- reschedule/cancel routing;
+- admin status routing;
+- absence of direct bypass writes in those routes.
+
+CI gate:
+
+- `.github/workflows/booking-occupancy-contract.yml`
+- zero secrets required;
+- runs validator plus `node --check` on authoritative server files.
+- first push run ID: `33297490828`.
+
+## EVIDENCE STATE
+
+### Source-level
+
+`PREPARED_AND_GATED`
+
+### CI
+
+The first branch push successfully created GitHub Actions run `33297490828`. Its final conclusion must be read before promotion; queued/running is not PASS.
+
+### Runtime database witness
+
+`NOT_YET_VALIDATED`
+
+Required witness is a real transaction-capable MongoDB environment proving:
+
+1. overlapping concurrent requests produce one commit + one conflict;
+2. no orphan Booking survives the losing transaction;
+3. cancelling releases slot ownership;
+4. exact cancelled start time can be rebooked;
+5. failed reschedule preserves original booking and original locks;
+6. cancelled restore fails if any hour has been taken.
 
 ## POC / FOC
 
-- **Source implementation:** prepared and manually source-reviewed on the fork branch.
-- **Runtime POC:** `NOT_YET_VALIDATED`.
-- **Production transaction chain:** `FOC_FLAGGED` until an authorized upstream merge, provider configuration, authoritative Court records, and a real witness reservation prove the full chain.
+- **Model/BMP remediation:** implemented on the stacked branch.
+- **Static CI POC:** pending final workflow conclusion.
+- **Database concurrency POC:** `NOT_YET_VALIDATED` until live transaction witness.
+- **Production FOC:** blocked until PR1 Court source + PR2 communications + this occupancy lane are authorized upstream and the full reservation witness passes.
 
-Required production witness:
+## NEXT ADMISSIBLE ACTION
 
-`verified court -> slot reserved -> Booking visible to business -> user operational channel -> user email receipt -> business WhatsApp -> business email -> queryable BookingDelivery receipts`
-
-## NEXT ADMISSIBLE ACTIONS
-
-1. Keep this PR bounded to communication/state evidence; do not merge unrelated UX redesign.
-2. Obtain/restore a CI or executable checkout receipt for `validate:booking-communications`, lint and build.
-3. Route the prepared branch through an upstream-authorized PR path; do not claim deployment before that happens.
-4. Configure/verify production email, WhatsApp and SMS providers without exposing secrets.
-5. After the Court source lane is merged/populated, run one real witness reservation and inspect `/api/admin/bookings/[id]/deliveries`.
-6. Only then promote the transaction communications lane to `POC_VALIDATED`.
+1. Read CI run `33297490828` to PASS/failure and fix any failure rather than explain it away.
+2. Open the bounded stacked review PR against `forge/booking-communications-contract`.
+3. Do not merge/deploy from this branch without the database concurrency witness.
+4. After upstream authorization, execute the real collision/cancel/rebook/reschedule/restore witness before `POC_VALIDATED`.

@@ -1,0 +1,122 @@
+name: FivesArena Transaction Integration
+
+on:
+  push:
+    branches:
+      - forge/fivesarena-transaction-integration
+  pull_request:
+    paths:
+      - 'app/api/courts/**'
+      - 'app/api/bookings/**'
+      - 'app/api/admin/bookings/**'
+      - 'components/BookingForm.jsx'
+      - 'lib/courts/**'
+      - 'lib/bookings/**'
+      - 'lib/integrations/**'
+      - 'lib/messaging/**'
+      - 'models/Court.js'
+      - 'models/Booking.js'
+      - 'models/BookingSlot.js'
+      - 'models/BookingDelivery.js'
+      - 'models/User.js'
+      - 'scripts/validate-court-contract.mjs'
+      - 'scripts/validate-booking-communications-contract.mjs'
+      - 'scripts/validate-booking-occupancy-contract.mjs'
+      - 'scripts/validate-booking-occupancy-mongo.mjs'
+      - 'scripts/validate-fivesarena-transaction-integration.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/fivesarena-transaction-integration.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  transaction-integration:
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout composed transaction branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Validate authoritative Court contract
+        run: npm run validate:court-contract
+
+      - name: Validate booking communications contract
+        run: npm run validate:booking-communications
+
+      - name: Validate atomic booking occupancy contract
+        run: npm run validate:booking-occupancy
+
+      - name: Syntax-check composed transaction surfaces
+        run: |
+          node --check app/api/courts/route.js
+          node --check lib/courts/normalizeCourtPayload.js
+          node --check models/Court.js
+          node --check models/Booking.js
+          node --check models/BookingSlot.js
+          node --check models/BookingDelivery.js
+          node --check lib/bookings/bookingOccupancy.js
+          node --check lib/bookings/bookingOccupancySlots.mjs
+          node --check lib/bookings/dispatchBookingCommunications.js
+          node --check lib/messaging/bookingReservationEmail.js
+          node --check lib/integrations/whatsapp.js
+          node --check lib/integrations/sms.js
+          node --check app/api/bookings/route.js
+          node --check app/api/bookings/guest/route.js
+          node --check 'app/api/bookings/[id]/route.js'
+          node --check 'app/api/admin/bookings/[id]/route.js'
+          node --check 'app/api/admin/bookings/[id]/payment/route.js'
+          node --check scripts/validate-fivesarena-transaction-integration.mjs
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Start transaction-capable MongoDB replica set
+        run: |
+          docker run -d --name fivesarena-integration-mongo -p 27017:27017 mongo:7.0 --replSet rs0 --bind_ip_all
+          for attempt in $(seq 1 60); do
+            if docker exec fivesarena-integration-mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' | grep -q '^1$'; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec fivesarena-integration-mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+          for attempt in $(seq 1 60); do
+            if docker exec fivesarena-integration-mongo mongosh --quiet --eval 'rs.status().myState' | grep -q '^1$'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'MongoDB replica set did not become PRIMARY' >&2
+          docker logs fivesarena-integration-mongo
+          exit 1
+
+      - name: Re-prove atomic occupancy against MongoDB
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_integration?replicaSet=rs0&directConnection=true'
+        run: npm run validate:booking-occupancy:mongo
+
+      - name: Prove composed transaction chain without fake provider success
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_integration?replicaSet=rs0&directConnection=true'
+          WHATSAPP_SIMULATION: 'true'
+          BOOKING_BUSINESS_EMAIL: 'business@example.test'
+          BOOKING_BUSINESS_WHATSAPP: '27820000000'
+        run: npm run validate:transaction-integration
+
+      - name: Production build against verified integration database
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_integration?replicaSet=rs0&directConnection=true'
+          WHATSAPP_SIMULATION: 'true'
+          BOOKING_BUSINESS_EMAIL: 'business@example.test'
+          BOOKING_BUSINESS_WHATSAPP: '27820000000'
+        run: npm run build

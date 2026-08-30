@@ -17,6 +17,25 @@ const BookingSchema = new mongoose.Schema(
     guestName:  { type: String, default: null },
     guestEmail: { type: String, default: null },
     guestPhone: { type: String, default: null },
+    // Per-booking communication snapshot. This is deliberately persisted so a
+    // later profile edit cannot rewrite the evidence of where this reservation
+    // was supposed to be delivered.
+    preferredChannel: {
+      type: String,
+      enum: ['whatsapp', 'email', 'sms'],
+      default: 'whatsapp',
+    },
+    contactEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: null,
+    },
+    contactPhone: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     date: {
       type: String, // stored as 'YYYY-MM-DD'
       required: [true, 'Booking date is required'],
@@ -94,8 +113,6 @@ BookingSchema.index(
   { sparse: true, partialFilterExpression: { paystackLastEventId: { $gt: '' } } },
 );
 
-// In dev, hot-reload can leave a stale model in mongoose.models with the old schema.
-// Always delete and re-register so schema changes (new fields, new enum values) take effect immediately.
 if (mongoose.models.Booking) {
   try { mongoose.deleteModel('Booking'); } catch { /* ignore */ }
 }

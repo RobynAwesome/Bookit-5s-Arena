@@ -4,6 +4,11 @@ import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import Court from '@/models/Court';
 import { dispatchBookingCommunications } from '@/lib/bookings/dispatchBookingCommunications';
+import {
+  createBookingWithOccupancy,
+  isBookingOccupancyConflict,
+  isBookingTransactionUnavailable,
+} from '@/lib/bookings/bookingOccupancy';
 import { rateLimit } from '@/lib/rateLimit';
 import { verifyBotRequest } from '@/lib/security/botid';
 import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
@@ -102,6 +107,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Bookings must start at 10:00 and end by 22:00.' }, { status: 400 });
     }
 
+    // Fast rejection + untouched legacy-booking guard. BookingSlot remains the
+    // final concurrency authority for all new/touched reservations.
     const sameDayBookings = await Booking.find({
       court: courtId,
       date,
@@ -123,7 +130,7 @@ export async function POST(request) {
 
     const total_price = court.price_per_hour * duration;
 
-    const booking = await Booking.create({
+    const booking = await createBookingWithOccupancy({
       court: courtId,
       guestName: cleanName,
       guestEmail: cleanEmail,
@@ -163,10 +170,17 @@ export async function POST(request) {
   } catch (error) {
     console.error('POST /api/bookings/guest error:', error);
 
-    if (error?.code === 11000) {
+    if (isBookingOccupancyConflict(error)) {
       return NextResponse.json(
-        { error: 'That court slot has just been reserved. Please choose another time.' },
+        { error: 'That court time overlaps a reservation that was just secured. Please choose another slot.' },
         { status: 409 }
+      );
+    }
+
+    if (isBookingTransactionUnavailable(error)) {
+      return NextResponse.json(
+        { error: 'The reservation safety lock is unavailable. No booking was created.' },
+        { status: 503 }
       );
     }
 

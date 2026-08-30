@@ -1,66 +1,80 @@
 export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/getSession';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
-import '@/models/Court';
-import { sendBookingConfirmation } from '@/lib/sendBookingConfirmation';
-import { sendResendConfirmation, isResendBookingConfirmationConfigured } from '@/lib/messaging/bookingResendConfirmation';
+import { ensureUserBookingEmailReceipt } from '@/lib/bookings/dispatchBookingCommunications';
 
-// POST /api/bookings/:id/resend — re-send booking receipt to user's email
-export async function POST(request, { params }) {
+// POST /api/bookings/:id/resend — ensure the current reservation email receipt
+// exists. Already-sent receipts are deliberately not duplicated.
+export async function POST(_request, { params }) {
   try {
     const { id } = await params;
-    const session = await getAuthSession();
+    if (!/^[a-fA-F0-9]{24}$/.test(id)) {
+      return NextResponse.json({ error: 'Invalid booking ID' }, { status: 400 });
+    }
 
+    const session = await getAuthSession();
     if (!session) {
       return NextResponse.json({ error: 'You must be logged in' }, { status: 401 });
     }
 
     await connectDB();
-    const booking = await Booking.findById(id).populate('court');
+    const booking = await Booking.findById(id)
+      .populate('court')
+      .populate('user', 'name email phone');
 
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
+    if (!booking.court) {
+      return NextResponse.json({ error: 'Booking court no longer exists' }, { status: 409 });
+    }
 
-    if (booking.user.toString() !== session.user.id) {
+    const ownerId = booking.user?._id?.toString?.() || booking.user?.toString?.();
+    if (!ownerId || ownerId !== session.user.id) {
       return NextResponse.json({ error: 'Not authorised' }, { status: 403 });
     }
 
-    let emailSent = false;
-    if (isResendBookingConfirmationConfigured()) {
-      const resendResponse = await sendResendConfirmation({
-        id: booking._id.toString(),
-        date: booking.date,
-        time: booking.start_time,
-        court: booking.court.name,
-        amount: booking.total_price,
-        type: 'confirmation'
-      }, session.user.email);
-      
-      if (resendResponse.success) {
-        emailSent = true;
-      } else {
-        console.warn('Resend email failed, falling back to Nodemailer:', resendResponse.error);
-      }
+    const customerName = booking.user?.name || session.user.name || 'Player';
+    const customerEmail = booking.contactEmail || booking.user?.email || session.user.email || null;
+
+    const receipt = await ensureUserBookingEmailReceipt({
+      booking,
+      court: booking.court,
+      customerName,
+      customerEmail,
+    });
+
+    if (receipt.status === 'sent') {
+      return NextResponse.json(
+        {
+          message: receipt.duplicateSuppressed
+            ? 'Receipt was already recorded as sent for this reservation revision.'
+            : 'Reservation receipt sent.',
+          receipt,
+        },
+        { status: 200 }
+      );
     }
 
-    if (!emailSent) {
-      await sendBookingConfirmation({
-        to: session.user.email,
-        name: session.user.name,
-        courtName: booking.court.name,
-        date: booking.date,
-        start_time: booking.start_time,
-        duration: booking.duration,
-        total_price: booking.total_price,
-      });
+    if (receipt.status === 'sending') {
+      return NextResponse.json(
+        { message: 'Receipt delivery is already in progress.', receipt },
+        { status: 202 }
+      );
     }
 
-    return NextResponse.json({ message: 'Receipt sent' }, { status: 200 });
+    return NextResponse.json(
+      {
+        error: receipt.error || 'Reservation receipt could not be sent.',
+        receipt,
+      },
+      { status: 502 }
+    );
   } catch (error) {
     console.error('POST /api/bookings/:id/resend error:', error);
-    return NextResponse.json({ error: 'Failed to send receipt' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process reservation receipt' }, { status: 500 });
   }
 }

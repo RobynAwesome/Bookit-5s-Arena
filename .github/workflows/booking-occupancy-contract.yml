@@ -1,0 +1,46 @@
+name: Booking Occupancy Contract
+
+on:
+  push:
+    branches:
+      - forge/atomic-booking-slot-invariant
+  pull_request:
+    paths:
+      - 'models/Booking.js'
+      - 'models/BookingSlot.js'
+      - 'lib/bookings/bookingOccupancy.js'
+      - 'lib/bookings/bookingOccupancySlots.mjs'
+      - 'app/api/bookings/**'
+      - 'app/api/admin/bookings/**'
+      - 'scripts/validate-booking-occupancy-contract.mjs'
+      - 'package.json'
+      - '.github/workflows/booking-occupancy-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  occupancy-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate slot and route contract
+        run: npm run validate:booking-occupancy
+
+      - name: Syntax-check authoritative server surfaces
+        run: |
+          node --check models/Booking.js
+          node --check models/BookingSlot.js
+          node --check lib/bookings/bookingOccupancy.js
+          node --check lib/bookings/bookingOccupancySlots.mjs
+          node --check app/api/bookings/route.js
+          node --check app/api/bookings/guest/route.js
+          node --check 'app/api/bookings/[id]/route.js'
+          node --check 'app/api/admin/bookings/[id]/route.js'

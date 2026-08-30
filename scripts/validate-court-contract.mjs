@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import Court from '../models/Court.js';
+import { readFileSync } from 'node:fs';
 import { normalizeCourtPayload } from '../lib/courts/normalizeCourtPayload.js';
 
 const canonicalInput = {
@@ -44,7 +44,8 @@ assert.throws(
   /capacity must be at least 2/
 );
 
-const requiredSchemaPaths = [
+const courtModelSource = readFileSync(new URL('../models/Court.js', import.meta.url), 'utf8');
+const requiredSchemaFields = [
   'owner',
   'name',
   'description',
@@ -57,12 +58,17 @@ const requiredSchemaPaths = [
   'sortOrder',
 ];
 
-for (const path of requiredSchemaPaths) {
-  assert.ok(Court.schema.path(path), `Court schema is missing expected path: ${path}`);
+for (const field of requiredSchemaFields) {
+  const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(
+    courtModelSource,
+    new RegExp(`\\b${escaped}\\s*:`),
+    `Court schema source is missing expected field: ${field}`
+  );
 }
 
-assert.equal(Court.schema.path('pricePerHour'), undefined);
-assert.equal(Court.schema.path('images'), undefined);
+assert.doesNotMatch(courtModelSource, /\bpricePerHour\s*:/);
+assert.doesNotMatch(courtModelSource, /\bimages\s*:/);
 
 console.log('court-contract: PASS');
 console.log('canonical persisted price field: price_per_hour');

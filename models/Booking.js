@@ -36,6 +36,14 @@ const BookingSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    // Revision 1 is the original reservation. Each material reschedule bumps
+    // this number so a fresh set of messages can be sent while retries within
+    // the same revision remain idempotent.
+    communicationRevision: {
+      type: Number,
+      min: 1,
+      default: 1,
+    },
     date: {
       type: String, // stored as 'YYYY-MM-DD'
       required: [true, 'Booking date is required'],
@@ -85,7 +93,8 @@ const BookingSchema = new mongoose.Schema(
 );
 
 // ── Indexes ─────────────────────────────────────────────────────────────────
-// Prevent double bookings: same court, same date, same start_time
+// Prevent identical start-time duplicates. A stronger multi-hour concurrency
+// invariant is handled in a separate booking-slot lane.
 BookingSchema.index({ court: 1, date: 1, start_time: 1 }, { unique: true });
 
 // Fast lookup of all bookings for a user (GET /api/bookings sorts by date asc)

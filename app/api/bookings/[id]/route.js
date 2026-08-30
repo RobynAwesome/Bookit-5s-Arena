@@ -6,6 +6,12 @@ import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
 import '@/models/Court';
 import { dispatchBookingCommunications } from '@/lib/bookings/dispatchBookingCommunications';
+import {
+  cancelBookingWithOccupancy,
+  isBookingOccupancyConflict,
+  isBookingTransactionUnavailable,
+  rescheduleBookingWithOccupancy,
+} from '@/lib/bookings/bookingOccupancy';
 import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
 
 const toMinutes = (time) => {
@@ -132,8 +138,8 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // User-friendly overlap check. The stronger concurrent multi-hour invariant
-    // is handled in the separate slot-lock remediation lane.
+    // Fast rejection and legacy guard. The atomic BookingSlot replacement in
+    // rescheduleBookingWithOccupancy is the actual concurrent-write authority.
     const sameDayBookings = await Booking.find({
       court: booking.court._id,
       date,
@@ -154,26 +160,36 @@ export async function PUT(request, { params }) {
       );
     }
 
-    booking.date = date;
-    booking.start_time = start_time;
-    booking.duration = duration;
-    booking.total_price = booking.court.price_per_hour * duration;
-    booking.communicationRevision = Math.max(1, Number(booking.communicationRevision || 1)) + 1;
-    await booking.save();
+    const total_price = booking.court.price_per_hour * duration;
+    await rescheduleBookingWithOccupancy({
+      bookingId: id,
+      date,
+      start_time,
+      duration,
+      total_price,
+    });
 
-    const customerName = booking.user?.name || session.user.name || 'Player';
-    const customerEmail = booking.contactEmail || booking.user?.email || session.user.email || null;
-    const customerPhone = booking.contactPhone || booking.user?.phone || null;
+    const updatedBooking = await Booking.findById(id)
+      .populate('court')
+      .populate('user', 'name email phone');
+
+    if (!updatedBooking || !updatedBooking.court) {
+      return NextResponse.json({ error: 'Updated booking could not be reloaded' }, { status: 500 });
+    }
+
+    const customerName = updatedBooking.user?.name || session.user.name || 'Player';
+    const customerEmail = updatedBooking.contactEmail || updatedBooking.user?.email || session.user.email || null;
+    const customerPhone = updatedBooking.contactPhone || updatedBooking.user?.phone || null;
 
     let communicationReceipts = [];
     try {
       communicationReceipts = await dispatchBookingCommunications({
-        booking,
-        court: booking.court,
+        booking: updatedBooking,
+        court: updatedBooking.court,
         customerName,
         customerEmail,
         customerPhone,
-        preferredChannel: booking.preferredChannel || 'whatsapp',
+        preferredChannel: updatedBooking.preferredChannel || 'whatsapp',
       });
     } catch (communicationError) {
       console.error('Booking updated but communication dispatch failed:', communicationError);
@@ -183,15 +199,25 @@ export async function PUT(request, { params }) {
     }
 
     return NextResponse.json(
-      { ...booking.toObject(), communicationReceipts },
+      { ...updatedBooking.toObject(), communicationReceipts },
       { status: 200 }
     );
   } catch (error) {
     console.error('PUT /api/bookings/:id error:', error);
-    if (error?.code === 11000) {
+    if (isBookingOccupancyConflict(error)) {
       return NextResponse.json(
-        { error: 'That court slot has just been reserved. Please choose another time.' },
+        { error: 'That court time overlaps a reservation that was just secured. Your original booking was not changed.' },
         { status: 409 }
+      );
+    }
+    if (error?.name === 'BookingOccupancyStateError') {
+      const status = error.code === 'BOOKING_NOT_FOUND' ? 404 : 409;
+      return NextResponse.json({ error: error.message }, { status });
+    }
+    if (isBookingTransactionUnavailable(error)) {
+      return NextResponse.json(
+        { error: 'The reservation safety lock is unavailable. Your booking was not changed.' },
+        { status: 503 }
       );
     }
     return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 });
@@ -228,12 +254,20 @@ export async function DELETE(_request, { params }) {
       );
     }
 
-    booking.status = 'cancelled';
-    await booking.save();
+    await cancelBookingWithOccupancy(id);
 
     return NextResponse.json({ message: 'Booking cancelled successfully' }, { status: 200 });
   } catch (error) {
     console.error('DELETE /api/bookings/:id error:', error);
+    if (error?.name === 'BookingOccupancyStateError' && error.code === 'BOOKING_NOT_FOUND') {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (isBookingTransactionUnavailable(error)) {
+      return NextResponse.json(
+        { error: 'The reservation safety lock is unavailable. The booking was not cancelled.' },
+        { status: 503 }
+      );
+    }
     return NextResponse.json({ error: 'Failed to cancel booking' }, { status: 500 });
   }
 }

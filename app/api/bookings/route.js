@@ -9,22 +9,23 @@ import { sendResendConfirmation, isResendBookingConfirmationConfigured } from '@
 import { sendBookingWATip } from '@/lib/integrations/whatsapp';
 import { rateLimit } from '@/lib/rateLimit';
 import { verifyBotRequest } from '@/lib/security/botid';
-import { isAllowedBookingStartTime } from '@/lib/bookingSlots';
+import {
+  isAllowedBookingStartTime,
+  resolveBookingPolicy,
+} from '@/lib/bookingSlots';
+import {
+  BookingConflictError,
+  createBookingAtomically,
+} from '@/lib/booking/bookingPersistence';
 
-// GET /api/bookings — get all bookings for the logged-in user
 export async function GET() {
   try {
     const session = await getAuthSession();
-
-    if (!session) {
-      return NextResponse.json({ error: 'You must be logged in' }, { status: 401 });
-    }
+    if (!session) return NextResponse.json({ error: 'You must be logged in' }, { status: 401 });
 
     await connectDB();
-
-    // .lean() returns plain JS objects (no Mongoose overhead) — faster for read-only list views
     const bookings = await Booking.find({ user: session.user.id })
-      .populate('court', 'name image address price_per_hour')
+      .populate('court', 'name image address price_per_hour bookingPolicy')
       .sort({ date: 1 })
       .lean();
 
@@ -35,7 +36,6 @@ export async function GET() {
   }
 }
 
-// POST /api/bookings — create a new booking
 export async function POST(request) {
   try {
     const botVerification = await verifyBotRequest();
@@ -43,167 +43,131 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Automated booking attempts are blocked.' }, { status: 403 });
     }
 
-    // Rate limit: max 10 booking attempts per minute per IP
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     if (rateLimit(ip, 10, 60000)) {
       return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 });
     }
 
     const session = await getAuthSession();
-
     if (!session) {
       return NextResponse.json({ error: 'You must be logged in to book a court' }, { status: 401 });
     }
 
     const { courtId, date, start_time, duration, payAtVenue } = await request.json();
+    const idempotencyKey = request.headers.get('idempotency-key')?.trim() || null;
 
-    if (!courtId || !date || !start_time || !duration) {
-      return NextResponse.json(
-        { error: 'Court, date, start time and duration are required' },
-        { status: 400 }
-      );
+    if (!courtId || !date || !start_time || duration === undefined || duration === null) {
+      return NextResponse.json({ error: 'Court, date, start time and duration are required' }, { status: 400 });
     }
-
-    // Validate ObjectId format
     if (!/^[a-fA-F0-9]{24}$/.test(courtId)) {
       return NextResponse.json({ error: 'Invalid court ID' }, { status: 400 });
     }
-
-    // Validate date format (YYYY-MM-DD)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date).getTime())) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(new Date(date).getTime())) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const bookingDate = new Date(date);
-    if (bookingDate < today) {
+    if (new Date(date) < today) {
       return NextResponse.json({ error: 'Bookings cannot be in the past.' }, { status: 400 });
     }
-
-    // Validate duration is a number in allowed range
-    if (typeof duration !== 'number' || duration < 1 || duration > 3 || !Number.isInteger(duration)) {
-      return NextResponse.json({ error: 'Duration must be 1, 2 or 3 hours' }, { status: 400 });
+    if (!Number.isInteger(duration) || duration <= 0) {
+      return NextResponse.json({ error: 'Duration must be a positive whole number of hours.' }, { status: 400 });
     }
 
     await connectDB();
-
-    // Check the court exists
     const court = await Court.findById(courtId);
-    if (!court) {
-      return NextResponse.json({ error: 'Court not found' }, { status: 404 });
-    }
+    if (!court) return NextResponse.json({ error: 'Court not found' }, { status: 404 });
 
-    // Validate time window
-    const toMinutes = (t) => {
-      const [h, m] = t.split(':').map(Number);
-      return h * 60 + m;
-    };
-
-    const OPEN_MINUTES = 10 * 60;   // 10:00
-    const CLOSE_MINUTES = 22 * 60;  // 22:00
-
-    if (!isAllowedBookingStartTime(start_time, duration)) {
-      return NextResponse.json(
-        { error: 'Start time must be on the hour and the booking must finish by 22:00.' },
-        { status: 400 }
-      );
-    }
-
-    const newStart = toMinutes(start_time);
-    const newEnd = newStart + duration * 60;
-
-    if (newStart < OPEN_MINUTES || newEnd > CLOSE_MINUTES) {
-      return NextResponse.json(
-        { error: 'Bookings must start at 10:00 and end by 22:00.' },
-        { status: 400 }
-      );
-    }
-
-    // Check for overlapping bookings on the same court and date
-    const sameDayBookings = await Booking.find({
-      court: courtId,
-      date,
-      status: { $ne: 'cancelled' },
-    }).select('start_time duration');
-
-    const hasOverlap = sameDayBookings.some((b) => {
-      const existStart = toMinutes(b.start_time);
-      const existEnd = existStart + b.duration * 60;
-      return newStart < existEnd && newEnd > existStart;
-    });
-
-    if (hasOverlap) {
-      return NextResponse.json(
-        { error: 'This court is already booked during that time. Please choose a different slot.' },
-        { status: 409 }
-      );
+    const policy = resolveBookingPolicy(court.bookingPolicy);
+    if (!isAllowedBookingStartTime(start_time, duration, policy)) {
+      return NextResponse.json({
+        error: 'That start time or duration is outside this court’s configured booking policy.',
+        policy: {
+          openTime: policy.openTime,
+          closeTime: policy.closeTime,
+          slotMinutes: policy.slotMinutes,
+          minDurationHours: policy.minDurationHours,
+          maxDurationHours: policy.maxDurationHours,
+        },
+      }, { status: 400 });
     }
 
     const total_price = court.price_per_hour * duration;
+    let booking;
+    let replayed = false;
 
-    const booking = await Booking.create({
-      court: courtId,
-      user: session.user.id,
-      date,
-      start_time,
-      duration,
-      total_price,
-      status: 'pending',
-      paymentStatus: payAtVenue ? 'reserved' : 'unpaid',
-    });
-
-    // Send confirmation email (non-blocking)
     try {
-      let emailSent = false;
-      if (isResendBookingConfirmationConfigured()) {
-        const resendResponse = await sendResendConfirmation({
-          id: booking._id.toString(),
-          date,
-          time: start_time,
-          court: court.name,
-          amount: total_price,
-          type: 'confirmation'
-        }, session.user.email);
-        
-        if (resendResponse.success) {
-          emailSent = true;
-        } else {
-          console.warn('Resend confirmation failed, falling back to Nodemailer:', resendResponse.error);
-        }
-      }
-
-      if (!emailSent) {
-        await sendBookingConfirmation({
-          to: session.user.email,
-          name: session.user.name,
-          courtName: court.name,
+      const result = await createBookingAtomically({
+        bookingData: {
+          court: courtId,
+          user: session.user.id,
           date,
           start_time,
           duration,
           total_price,
-        });
+          status: 'pending',
+          paymentStatus: payAtVenue ? 'reserved' : 'unpaid',
+        },
+        idempotencyKey,
+      });
+      booking = result.booking;
+      replayed = result.replayed;
+    } catch (bookingError) {
+      if (bookingError instanceof BookingConflictError || bookingError?.code === 'BOOKING_CONFLICT') {
+        return NextResponse.json({ error: bookingError.message }, { status: 409 });
       }
-    } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError);
+      throw bookingError;
     }
 
-    // Phase 4: Send WhatsApp Notification (Non-blocking)
-    if (session.user.phone) {
-        try {
-            await sendBookingWATip({
-              to: session.user.phone,
-              name: session.user.name,
-              courtName: court.name,
-              date,
-              time: start_time
-            });
-        } catch (waError) {
-            console.error('Failed to send WhatsApp notification:', waError);
+    if (!replayed) {
+      try {
+        let emailSent = false;
+        if (isResendBookingConfirmationConfigured()) {
+          const resendResponse = await sendResendConfirmation({
+            id: booking._id.toString(),
+            date,
+            time: start_time,
+            court: court.name,
+            amount: total_price,
+            type: 'confirmation',
+          }, session.user.email);
+          if (resendResponse.success) emailSent = true;
+          else console.warn('Resend confirmation failed, falling back to Nodemailer:', resendResponse.error);
         }
+        if (!emailSent) {
+          await sendBookingConfirmation({
+            to: session.user.email,
+            name: session.user.name,
+            courtName: court.name,
+            date,
+            start_time,
+            duration,
+            total_price,
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+      }
     }
 
-    return NextResponse.json(booking, { status: 201 });
+    if (!replayed && session.user.phone) {
+      try {
+        await sendBookingWATip({
+          to: session.user.phone,
+          name: session.user.name,
+          courtName: court.name,
+          date,
+          time: start_time,
+        });
+      } catch (waError) {
+        console.error('Failed to send WhatsApp notification:', waError);
+      }
+    }
+
+    const response = NextResponse.json(booking, { status: replayed ? 200 : 201 });
+    response.headers.set('X-FivesArena-Idempotent-Replay', replayed ? 'true' : 'false');
+    return response;
   } catch (error) {
     console.error('POST /api/bookings error:', error);
     return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 });

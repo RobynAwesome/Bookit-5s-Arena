@@ -5,38 +5,17 @@ import connectDB from '@/lib/mongodb';
 import Court from '@/models/Court';
 import Booking from '@/models/Booking';
 import {
-  BOOKING_CLOSE_HOUR,
-  BOOKING_MAX_DURATION,
-  BOOKING_OPEN_HOUR,
-  isAllowedBookingStartTime,
-  toHourStart,
+  bookingIntervalsOverlap,
+  getAllowedStartTimes,
+  getDurationOptions,
+  resolveBookingPolicy,
 } from '@/lib/bookingSlots';
-
-/** @param {string} t */
-function toMinutes(t) {
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
-}
-
-/**
- * Same overlap rule as POST /api/bookings: intervals [start, end) in minutes.
- * @param {{ start_time: string, duration: number }[]} bookings
- * @param {string} startTime
- * @param {number} durationHours
- */
-function slotConflicts(bookings, startTime, durationHours) {
-  const newStart = toMinutes(startTime);
-  const newEnd = newStart + durationHours * 60;
-  return bookings.some((b) => {
-    const existStart = toMinutes(b.start_time);
-    const existEnd = existStart + b.duration * 60;
-    return newStart < existEnd && newEnd > existStart;
-  });
-}
 
 /**
  * GET /api/availability?date=YYYY-MM-DD&courtId=<optional ObjectId>
- * Public read: lists bookable hour slots per court (non-cancelled bookings only).
+ *
+ * Court policy is data. This endpoint does not decide a venue's operating
+ * window or duration rules; it resolves them from the authoritative Court.
  */
 export async function GET(request) {
   try {
@@ -62,14 +41,16 @@ export async function GET(request) {
     await connectDB();
 
     const courtFilter = courtId ? { _id: courtId } : {};
-    const courts = await Court.find(courtFilter).sort({ sortOrder: 1, createdAt: 1 }).select('_id name').lean();
+    const courts = await Court.find(courtFilter)
+      .sort({ sortOrder: 1, createdAt: 1 })
+      .select('_id name bookingPolicy')
+      .lean();
 
     if (courtId && courts.length === 0) {
       return NextResponse.json({ error: 'Court not found' }, { status: 404 });
     }
 
-    const courtIds = courts.map((c) => c._id);
-
+    const courtIds = courts.map((court) => court._id);
     const bookingRows = await Booking.find({
       court: { $in: courtIds },
       date,
@@ -78,7 +59,6 @@ export async function GET(request) {
       .select('court start_time duration')
       .lean();
 
-    /** @type {Map<string, { start_time: string, duration: number }[]>} */
     const byCourt = new Map();
     for (const row of bookingRows) {
       const key = String(row.court);
@@ -86,37 +66,51 @@ export async function GET(request) {
       byCourt.get(key).push({ start_time: row.start_time, duration: row.duration });
     }
 
-    const payload = {
-      date,
-      window: { open: `${String(BOOKING_OPEN_HOUR).padStart(2, '0')}:00`, close: `${String(BOOKING_CLOSE_HOUR).padStart(2, '0')}:00` },
-      courts: courts.map((court) => {
-        const bookings = byCourt.get(String(court._id)) || [];
-        const slots = [];
+    const courtPayload = courts.map((court) => {
+      const policy = resolveBookingPolicy(court.bookingPolicy);
+      const bookings = byCourt.get(String(court._id)) || [];
+      const durationOptions = getDurationOptions(policy);
+      const candidateStarts = getAllowedStartTimes(policy.minDurationHours, policy);
 
-        for (let hour = BOOKING_OPEN_HOUR; hour < BOOKING_CLOSE_HOUR; hour += 1) {
-          const start_time = toHourStart(hour);
-          if (!isAllowedBookingStartTime(start_time, 1)) continue;
-
-          const availableDurations = [];
-          for (let d = 1; d <= BOOKING_MAX_DURATION; d += 1) {
-            if (!isAllowedBookingStartTime(start_time, d)) continue;
-            if (!slotConflicts(bookings, start_time, d)) availableDurations.push(d);
-          }
-
-          if (availableDurations.length) {
-            slots.push({ start_time, availableDurations });
-          }
-        }
+      const slots = candidateStarts.map((slot) => {
+        const availableDurations = durationOptions.filter((duration) => {
+          const requestSlot = { start_time: slot.value, duration };
+          return !bookings.some((booking) => bookingIntervalsOverlap(booking, requestSlot));
+        });
 
         return {
-          id: String(court._id),
-          name: court.name,
-          slots,
+          start_time: slot.value,
+          availableDurations,
         };
-      }),
-    };
+      }).filter((slot) => slot.availableDurations.length > 0);
 
-    return NextResponse.json(payload, { status: 200 });
+      return {
+        id: String(court._id),
+        name: court.name,
+        policy: {
+          timezone: policy.timezone,
+          openTime: policy.openTime,
+          closeTime: policy.closeTime,
+          slotMinutes: policy.slotMinutes,
+          minDurationHours: policy.minDurationHours,
+          maxDurationHours: policy.maxDurationHours,
+          editCutoffMinutes: policy.editCutoffMinutes,
+          source: policy.source,
+        },
+        window: { open: policy.openTime, close: policy.closeTime },
+        slots,
+      };
+    });
+
+    const policyFingerprints = new Set(
+      courtPayload.map((court) => JSON.stringify(court.policy)),
+    );
+
+    return NextResponse.json({
+      date,
+      window: policyFingerprints.size === 1 && courtPayload[0] ? courtPayload[0].window : null,
+      courts: courtPayload,
+    }, { status: 200 });
   } catch (error) {
     console.error('GET /api/availability error:', error);
     return NextResponse.json({ error: 'Failed to load availability' }, { status: 500 });

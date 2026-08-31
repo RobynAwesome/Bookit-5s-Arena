@@ -13,23 +13,21 @@ const BookingSchema = new mongoose.Schema(
       required: false,
       default: null,
     },
-    // Guest booking fields (when user is not authenticated)
-    guestName:  { type: String, default: null },
+    guestName: { type: String, default: null },
     guestEmail: { type: String, default: null },
     guestPhone: { type: String, default: null },
     date: {
-      type: String, // stored as 'YYYY-MM-DD'
+      type: String,
       required: [true, 'Booking date is required'],
     },
     start_time: {
-      type: String, // stored as 'HH:MM'
+      type: String,
       required: [true, 'Start time is required'],
     },
     duration: {
-      type: Number, // in hours
+      type: Number,
       required: [true, 'Duration is required'],
-      min: [1, 'Minimum booking is 1 hour'],
-      max: [3, 'Maximum booking is 3 hours'],
+      min: [1, 'Minimum persisted booking duration is 1 hour'],
     },
     total_price: {
       type: Number,
@@ -49,14 +47,17 @@ const BookingSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    /** Paystack ``reference`` (or other PSP id) — set when initializing checkout and/or on webhook for idempotent lookup */
     externalPaymentRef: {
       type: String,
       default: null,
       trim: true,
     },
-    /** Last processed Paystack ``data.id`` — stops replay storms on ``charge.success`` */
     paystackLastEventId: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    idempotencyKey: {
       type: String,
       default: null,
       trim: true,
@@ -65,20 +66,13 @@ const BookingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ── Indexes ─────────────────────────────────────────────────────────────────
-// Prevent double bookings: same court, same date, same start_time
-BookingSchema.index({ court: 1, date: 1, start_time: 1 }, { unique: true });
-
-// Fast lookup of all bookings for a user (GET /api/bookings sorts by date asc)
+// Exact-start lookup. Overlap exclusion is enforced transactionally through
+// BookingDayMutex so cancelled slots can become bookable again.
+BookingSchema.index({ court: 1, date: 1, start_time: 1 });
 BookingSchema.index({ user: 1, date: 1 });
-
-// Fast overlap check: given court + date, filter only non-cancelled slots
 BookingSchema.index({ court: 1, date: 1, status: 1 });
-
-// Admin dashboard — newest bookings first
 BookingSchema.index({ createdAt: -1 });
 
-// Paystack reference lookup (only documents with a non-empty ref participate)
 BookingSchema.index(
   { externalPaymentRef: 1 },
   {
@@ -94,8 +88,16 @@ BookingSchema.index(
   { sparse: true, partialFilterExpression: { paystackLastEventId: { $gt: '' } } },
 );
 
-// In dev, hot-reload can leave a stale model in mongoose.models with the old schema.
-// Always delete and re-register so schema changes (new fields, new enum values) take effect immediately.
+BookingSchema.index(
+  { idempotencyKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      idempotencyKey: { $exists: true, $type: 'string', $gt: '' },
+    },
+  },
+);
+
 if (mongoose.models.Booking) {
   try { mongoose.deleteModel('Booking'); } catch { /* ignore */ }
 }

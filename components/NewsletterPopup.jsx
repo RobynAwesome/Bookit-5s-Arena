@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaEnvelope, FaFutbol } from "react-icons/fa";
 import {
@@ -9,19 +10,27 @@ import {
 } from "@/lib/popupPreferences";
 
 export default function NewsletterPopup() {
+  const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [dontShow, setDontShow] = useState(false);
 
   useEffect(() => {
+    // The homepage is now a continuous Arena Chronicle. Timed modal marketing
+    // must not interrupt the primary booking/venue journey.
+    if (pathname === "/") {
+      setShow(false);
+      return undefined;
+    }
+
     const dismissedForever = localStorage.getItem(NEWSLETTER_POPUP_DISMISSED_KEY);
     const subscribed = localStorage.getItem(NEWSLETTER_POPUP_SUBSCRIBED_KEY);
-    if (dismissedForever || subscribed) return;
+    if (dismissedForever || subscribed) return undefined;
 
     const timer = setTimeout(() => setShow(true), 20000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [pathname]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,6 +59,8 @@ export default function NewsletterPopup() {
     }
   };
 
+  if (pathname === "/") return null;
+
   return (
     <AnimatePresence>
       {show && (
@@ -59,7 +70,6 @@ export default function NewsletterPopup() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Backdrop */}
           <motion.div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={dismiss}
@@ -68,7 +78,6 @@ export default function NewsletterPopup() {
             exit={{ opacity: 0 }}
           />
 
-          {/* Modal */}
           <motion.div
             className="relative w-full max-w-md bg-gray-900 border border-gray-700 rounded-2xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
             initial={{ opacity: 0, scale: 0.85, y: 30 }}
@@ -76,7 +85,6 @@ export default function NewsletterPopup() {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            {/* Close */}
             <button
               onClick={dismiss}
               className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
@@ -180,4 +188,3 @@ export default function NewsletterPopup() {
     </AnimatePresence>
   );
 }
-

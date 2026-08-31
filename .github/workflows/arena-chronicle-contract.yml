@@ -1,0 +1,98 @@
+name: FivesArena Arena Chronicle
+
+on:
+  push:
+    branches:
+      - forge/kage-arena-chronicle
+  pull_request:
+    paths:
+      - 'app/page.jsx'
+      - 'app/layout.jsx'
+      - 'components/experience/**'
+      - 'components/ContextualFloatingNavigation.jsx'
+      - 'components/NewsletterPopup.jsx'
+      - 'lib/arena/**'
+      - 'scripts/validate-arena-chronicle.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/arena-chronicle-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  arena-chronicle:
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout governed experience branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Validate arena chronicle contract
+        run: npm run validate:arena-chronicle
+
+      - name: Revalidate Court source contract
+        run: npm run validate:court-contract
+
+      - name: Revalidate communication contract
+        run: npm run validate:booking-communications
+
+      - name: Revalidate atomic occupancy contract
+        run: npm run validate:booking-occupancy
+
+      - name: Syntax-check governed non-JSX modules
+        run: |
+          node --check lib/arena/reality.js
+          node --check scripts/validate-arena-chronicle.mjs
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Start transaction-capable MongoDB replica set
+        run: |
+          docker run -d --name fivesarena-chronicle-mongo -p 27017:27017 mongo:7.0 --replSet rs0 --bind_ip_all
+          for attempt in $(seq 1 60); do
+            if docker exec fivesarena-chronicle-mongo mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' | grep -q '^1$'; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec fivesarena-chronicle-mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+          for attempt in $(seq 1 60); do
+            if docker exec fivesarena-chronicle-mongo mongosh --quiet --eval 'rs.status().myState' | grep -q '^1$'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'MongoDB replica set did not become PRIMARY' >&2
+          docker logs fivesarena-chronicle-mongo
+          exit 1
+
+      - name: Re-prove atomic occupancy against MongoDB
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_chronicle?replicaSet=rs0&directConnection=true'
+        run: npm run validate:booking-occupancy:mongo
+
+      - name: Re-prove composed transaction chain
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_chronicle?replicaSet=rs0&directConnection=true'
+          WHATSAPP_SIMULATION: 'true'
+          BOOKING_BUSINESS_EMAIL: 'business@example.test'
+          BOOKING_BUSINESS_WHATSAPP: '27820000000'
+        run: npm run validate:transaction-integration
+
+      - name: Production build with governed home experience
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_chronicle?replicaSet=rs0&directConnection=true'
+          WHATSAPP_SIMULATION: 'true'
+          BOOKING_BUSINESS_EMAIL: 'business@example.test'
+          BOOKING_BUSINESS_WHATSAPP: '27820000000'
+        run: npm run build

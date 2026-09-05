@@ -1,0 +1,86 @@
+name: Booking Occupancy Contract
+
+on:
+  push:
+    branches:
+      - forge/atomic-booking-slot-invariant
+  pull_request:
+    paths:
+      - 'models/Booking.js'
+      - 'models/BookingSlot.js'
+      - 'lib/bookings/bookingOccupancy.js'
+      - 'lib/bookings/bookingOccupancySlots.mjs'
+      - 'app/api/bookings/**'
+      - 'app/api/admin/bookings/**'
+      - 'scripts/validate-booking-occupancy-contract.mjs'
+      - 'scripts/validate-booking-occupancy-mongo.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/booking-occupancy-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  occupancy-contract:
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Validate slot and route contract
+        run: npm run validate:booking-occupancy
+
+      - name: Syntax-check authoritative server surfaces
+        run: |
+          node --check models/Booking.js
+          node --check models/BookingSlot.js
+          node --check lib/bookings/bookingOccupancy.js
+          node --check lib/bookings/bookingOccupancySlots.mjs
+          node --check app/api/bookings/route.js
+          node --check app/api/bookings/guest/route.js
+          node --check 'app/api/bookings/[id]/route.js'
+          node --check 'app/api/admin/bookings/[id]/route.js'
+          node --check scripts/validate-booking-occupancy-mongo.mjs
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Start transaction-capable MongoDB replica set
+        run: |
+          docker run -d --name fivesarena-mongo-rs -p 27017:27017 mongo:7.0 --replSet rs0 --bind_ip_all
+          for attempt in $(seq 1 60); do
+            if docker exec fivesarena-mongo-rs mongosh --quiet --eval 'db.adminCommand({ping:1}).ok' | grep -q '^1$'; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec fivesarena-mongo-rs mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+          for attempt in $(seq 1 60); do
+            if docker exec fivesarena-mongo-rs mongosh --quiet --eval 'rs.status().myState' | grep -q '^1$'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'MongoDB replica set did not become PRIMARY' >&2
+          docker logs fivesarena-mongo-rs
+          exit 1
+
+      - name: Prove atomic occupancy against MongoDB
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_bmp?replicaSet=rs0&directConnection=true'
+        run: npm run validate:booking-occupancy:mongo
+
+      - name: Production build against verified CI database
+        env:
+          MONGODB_URI: 'mongodb://127.0.0.1:27017/fivesarena_bmp?replicaSet=rs0&directConnection=true'
+        run: npm run build

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import {
   FaCalendarAlt, FaClock, FaFutbol, FaLock,
   FaWhatsapp, FaPhone, FaMapMarkerAlt,
   FaCheckCircle, FaMoneyBillWave, FaUser,
+  FaEnvelope, FaMobileAlt,
 } from 'react-icons/fa';
 import InfoTooltip from './InfoTooltip';
 import {
@@ -21,6 +22,12 @@ import {
   enqueueOfflineEvent,
 } from '@/lib/offline/kopanoOfflineQueue';
 
+const CHANNELS = [
+  { value: 'whatsapp', label: 'WhatsApp', icon: FaWhatsapp, note: 'Default' },
+  { value: 'email', label: 'Email', icon: FaEnvelope, note: 'Receipt + updates' },
+  { value: 'sms', label: 'SMS', icon: FaMobileAlt, note: 'Text updates' },
+];
+
 const BookingForm = ({ courtId, courtName, pricePerHour }) => {
   const { data: session } = useSession();
   const router = useRouter();
@@ -28,7 +35,10 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [duration, setDuration] = useState('1');
+  const [preferredChannel, setPreferredChannel] = useState('whatsapp');
+  const [registeredPhone, setRegisteredPhone] = useState('');
   const [error, setError] = useState('');
+  const [communicationWarning, setCommunicationWarning] = useState('');
   const [reserveLoading, setReserveLoading] = useState(false);
   const [reserved, setReserved] = useState(false);
   const [showGuestForm, setShowGuestForm] = useState(false);
@@ -38,8 +48,15 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
   const [guestReserveLoading, setGuestReserveLoading] = useState(false);
   const [reservationMode, setReservationMode] = useState('reserved');
 
+  useEffect(() => {
+    if (!registeredPhone && session?.user?.phone) {
+      setRegisteredPhone(session.user.phone);
+    }
+  }, [registeredPhone, session?.user?.phone]);
+
   const totalPrice = pricePerHour * Number(duration);
   const slotOptions = getAllowedStartTimes(duration);
+  const requiresPhone = preferredChannel === 'whatsapp' || preferredChannel === 'sms';
 
   const handleDurationChange = (nextDuration) => {
     const safeDuration = String(normalizeDuration(nextDuration));
@@ -59,9 +76,19 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
     return true;
   };
 
+  const captureCommunicationState = (data) => {
+    const receipts = Array.isArray(data?.communicationReceipts) ? data.communicationReceipts : [];
+    if (receipts.some((receipt) => receipt?.status !== 'sent')) {
+      setCommunicationWarning(
+        'Your court is reserved, but one or more communication channels could not verify delivery. The venue can still see the reservation in the booking system.'
+      );
+    }
+  };
+
   const buildOfflineBookingIntent = (actorType) => {
     const safeDuration = Number(duration);
-    const normalizedPhone = guestPhone.replace(/\s/g, '');
+    const actorPhone = actorType === 'guest' ? guestPhone : registeredPhone;
+    const normalizedPhone = String(actorPhone || '').replace(/\s/g, '');
     const stableActor =
       actorType === 'guest'
         ? {
@@ -73,6 +100,7 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
             type: 'user',
             id: session?.user?.id || null,
             email: session?.user?.email || null,
+            phone: normalizedPhone,
           };
 
     return {
@@ -84,6 +112,7 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
         start_time: startTime,
         duration: safeDuration,
         payAtVenue: true,
+        preferredChannel,
       },
       payload: {
         source: 'bookit-court-form',
@@ -96,6 +125,7 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
         start_time: startTime,
         duration: safeDuration,
         total_price: totalPrice,
+        preferredChannel,
         actor:
           actorType === 'guest'
             ? {
@@ -107,6 +137,7 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
             : {
                 type: 'user',
                 userId: session?.user?.id || null,
+                phone_last4: normalizedPhone.slice(-4),
               },
         queued_at: new Date().toISOString(),
       },
@@ -129,8 +160,16 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
 
   const handleReserve = async () => {
     setError('');
+    setCommunicationWarning('');
     if (!session) { router.push('/login'); return; }
     if (!validateForm()) return;
+
+    const cleanPhone = registeredPhone.replace(/\s/g, '');
+    if (cleanPhone && !/^(\+27|0)[0-9]{9}$/.test(cleanPhone)) {
+      setError('Please enter a valid SA phone number (e.g. 0821234567).');
+      return;
+    }
+
     setReserveLoading(true);
     try {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -141,10 +180,19 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courtId, date, start_time: startTime, duration: Number(duration), payAtVenue: true }),
+        body: JSON.stringify({
+          courtId,
+          date,
+          start_time: startTime,
+          duration: Number(duration),
+          payAtVenue: true,
+          preferredChannel,
+          contactPhone: cleanPhone || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to reserve. Please try again.'); return; }
+      captureCommunicationState(data);
       setReservationMode('reserved');
       setReserved(true);
     } catch {
@@ -160,6 +208,7 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
 
   const handleGuestReserve = async () => {
     setError('');
+    setCommunicationWarning('');
     if (!validateForm()) return;
     if (!guestName.trim() || !guestEmail.trim() || !guestPhone.trim()) {
       setError('Please fill in your name, email and phone number.');
@@ -185,11 +234,12 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           courtId, date, start_time: startTime, duration: Number(duration),
-          guestName, guestEmail, guestPhone,
+          guestName, guestEmail, guestPhone, preferredChannel,
         }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to reserve. Please try again.'); return; }
+      captureCommunicationState(data);
       setReservationMode('reserved');
       setReserved(true);
     } catch {
@@ -206,6 +256,57 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
   const inputClass =
     'w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:ring-2 focus:ring-yellow-600 focus:border-transparent outline-none transition-all placeholder-gray-500';
   const labelClass = 'block text-xs font-bold text-gray-400 mb-2 uppercase tracking-widest';
+
+  const communicationSelector = (
+    <div className="mb-5 p-4 bg-gray-800/60 border border-gray-700 rounded-xl space-y-3">
+      <div>
+        <p className="text-xs font-black uppercase tracking-widest text-white">Preferred booking updates</p>
+        <p className="text-[11px] text-gray-400 mt-1">
+          WhatsApp is the default. A reservation receipt is always emailed to you and the venue.
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {CHANNELS.map(({ value, label, icon: Icon, note }) => {
+          const active = preferredChannel === value;
+          return (
+            <motion.button
+              key={value}
+              type="button"
+              onClick={() => setPreferredChannel(value)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className={`rounded-xl border px-2 py-3 text-center transition-all ${
+                active
+                  ? 'border-green-500 bg-green-900/30 text-green-300 shadow-[0_0_15px_rgba(34,197,94,0.15)]'
+                  : 'border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600'
+              }`}
+              aria-pressed={active}
+            >
+              <Icon className="mx-auto mb-1.5" size={15} />
+              <span className="block text-[10px] font-black uppercase tracking-wider">{label}</span>
+              <span className="block text-[8px] opacity-70 mt-0.5">{note}</span>
+            </motion.button>
+          );
+        })}
+      </div>
+      {session && requiresPhone && (
+        <div>
+          <label htmlFor="booking-contact-phone" className={labelClass}>
+            Phone for {preferredChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'}
+            <InfoTooltip text="Leave blank to use the phone number already saved on your account. If none is saved, the reservation API will ask for one before using WhatsApp or SMS." position="top" />
+          </label>
+          <input
+            id="booking-contact-phone"
+            type="tel"
+            placeholder="e.g. 0821234567"
+            value={registeredPhone}
+            onChange={(e) => setRegisteredPhone(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      )}
+    </div>
+  );
 
   if (reserved) {
     return (
@@ -244,11 +345,21 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
               ? 'This device saved your booking request for sync when the connection returns. No court slot is held until the request syncs and staff confirm availability.'
               : (
                 <>
-                  Your slot is reserved. Please arrive at the venue and pay <strong className="text-white">R{totalPrice} cash</strong> on the day. Your booking will be confirmed once payment is received by our staff.
+                  Your slot is reserved in the booking system. Please arrive at the venue and pay <strong className="text-white">R{totalPrice} cash</strong> on the day. Payment confirmation is a separate staff-recorded state.
                 </>
               )}
           </p>
         </div>
+
+        {communicationWarning && reservationMode !== 'queued' && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 p-3 bg-amber-950/40 border border-amber-800 rounded-xl text-amber-300 text-xs"
+          >
+            {communicationWarning}
+          </motion.div>
+        )}
 
         <p className="text-gray-400 text-xs mb-4 text-center font-bold uppercase tracking-widest">
           Questions? Contact us via WhatsApp
@@ -298,6 +409,8 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
           All court bookings are <strong>pay at venue (cash)</strong>. Reserve your slot online, then pay our staff on arrival.
         </p>
       </div>
+
+      {communicationSelector}
 
       {!session && (
         <motion.div
@@ -475,4 +588,3 @@ const BookingForm = ({ courtId, courtName, pricePerHour }) => {
 };
 
 export default BookingForm;
-

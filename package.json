@@ -13,6 +13,7 @@
     "validate:offline-sync": "node --env-file=.env.local scripts/validate-offline-sync-contract.mjs",
     "validate:offline-sync:shape": "node --env-file=.env.local scripts/validate-offline-sync-shape.mjs",
     "validate:court-assets": "node scripts/validate-court-assets.mjs",
+    "validate:court-contract": "node scripts/validate-court-contract.mjs",
     "validate:booking-communications": "node scripts/validate-booking-communications-contract.mjs",
     "validate:booking-occupancy": "node scripts/validate-booking-occupancy-contract.mjs",
     "validate:booking-occupancy:mongo": "node scripts/validate-booking-occupancy-mongo.mjs",
@@ -74,6 +75,7 @@
     "uuid": ">=11.1.1",
     "postcss": ">=8.5.6",
     "js-yaml": ">=3.13.1",
-    "@babel/core": ">=7.29.6","nodemailer": "^6.9.16"
+    "@babel/core": ">=7.29.6",
+    "nodemailer": "^6.9.16"
   }
 }

@@ -160,7 +160,7 @@ function AuthPageInner() {
             Account access
           </p>
           <h1 className="mt-4 text-4xl font-black uppercase leading-none tracking-tight sm:text-6xl">
-            Sign in to the arena, not an expired campaign.
+            Sign in to the arena.
           </h1>
           <p className="mt-5 text-sm leading-7 text-gray-400 sm:text-base">
             Account access is for current 5s Arena features such as booking history and role-based
@@ -168,7 +168,7 @@ function AuthPageInner() {
             is currently available; those states must be confirmed by their own source.
           </p>
 
-          <div className="mt-7 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-5">
+          <div data-tournament-state="archive" aria-label="World Cup 5s 2026 archive notice" className="mt-7 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-5">
             <div className="flex items-center gap-3 text-yellow-300">
               <FaTrophy />
               <p className="text-xs font-black uppercase tracking-widest">World Cup 5s 2026</p>

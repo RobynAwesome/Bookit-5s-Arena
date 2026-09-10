@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { FaCalendarCheck, FaFutbol, FaCalendarAlt, FaTrophy } from 'react-icons/fa';
+import { isEpochRelaunchRoot } from '@/lib/featureFlags';
 
 const MENU_ITEMS = [
   {
@@ -41,6 +42,7 @@ export default function SoccerBallMenu() {
   const role = session?.user?.activeRole || session?.user?.role;
 
   const hideMenu =
+    isEpochRelaunchRoot(pathname) ||
     pathname === '/login' ||
     pathname === '/register' ||
     pathname === '/role-select' ||

@@ -64,6 +64,21 @@ test("parked root page has no Hellenic identity and no booking CTA", () => {
   assert.deepEqual(assertCanonicalOutboundLinks(), []);
 });
 
+test("parked root chrome hides legacy booking and extra identity surfaces", () => {
+  const header = read("components/Header.jsx");
+  const soccerBallMenu = read("components/SoccerBallMenu.jsx");
+
+  assert.match(soccerBallMenu, /isEpochRelaunchRoot\(pathname\)/);
+  assert.match(
+    header,
+    /\{!epochRoot && \(\s*<div className="hidden lg:flex items-center gap-2 mr-1">/s,
+  );
+  assert.match(
+    header,
+    /\{!epochRoot && \(\s*<div className="relative group hidden md:block mr-2">/s,
+  );
+});
+
 test("creator page no longer uses the stale LinkedIn slug", () => {
   const creator = read("app/creator/page.jsx");
   assert.equal(containsStaleLinkedIn(creator), false);

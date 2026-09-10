@@ -399,64 +399,68 @@ const HeaderInner = () => {
           </div>
 
           {/* ── Social Icons (Blog-matching) ── */}
-          <div className="hidden lg:flex items-center gap-2 mr-1">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="p-1.5 text-gray-500 hover:text-yellow-500 transition-colors"><FaFacebookF size={13} /></a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="p-1.5 text-gray-500 hover:text-yellow-500 transition-colors"><FaInstagram size={13} /></a>
-            <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="p-1.5 text-gray-500 hover:text-yellow-500 transition-colors"><FaTiktok size={13} /></a>
-          </div>
+          {!epochRoot && (
+            <div className="hidden lg:flex items-center gap-2 mr-1">
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="p-1.5 text-gray-500 hover:text-yellow-500 transition-colors"><FaFacebookF size={13} /></a>
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="p-1.5 text-gray-500 hover:text-yellow-500 transition-colors"><FaInstagram size={13} /></a>
+              <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="p-1.5 text-gray-500 hover:text-yellow-500 transition-colors"><FaTiktok size={13} /></a>
+            </div>
+          )}
 
           {/* ── Sovereign Ecosystem Dropdown (ISIS Protocol Chapter 6.2) ── */}
-          <div className="relative group hidden md:block mr-2">
-            <button className="flex min-h-[38px] items-center gap-1.5 px-2.5 py-1 text-xs font-mono tracking-wider text-gray-400 hover:text-white rounded-lg border border-gray-800 bg-gray-900/60 transition hover:border-gray-700">
-              <span className="text-green-400 font-bold">KPGS</span> ▾
-            </button>
-            <div className="absolute right-0 top-full mt-2 w-56 bg-gray-950/98 border border-gray-800 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] hidden group-hover:block backdrop-blur-xl p-1.5 z-50">
-              <a
-                href="https://kopanolabs.com"
-                target="_blank"
-                rel="noreferrer"
-                className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
-              >
-                <span className="font-bold text-green-400">Kopano Labs</span>
-                <span className="text-[9px] text-gray-500">Autonomous Sovereign Hub</span>
-              </a>
-              <a
-                href="https://fivesarena.com"
-                className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
-              >
-                <span className="font-bold text-yellow-400">Bookit 5s Arena</span>
-                <span className="text-[9px] text-gray-500">5-a-Side Hellenic FC</span>
-              </a>
-              <a
-                href="https://blog.fivesarena.com"
-                target="_blank"
-                rel="noreferrer"
-                className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
-              >
-                <span className="font-bold text-blue-400">The 5s Blog</span>
-                <span className="text-[9px] text-gray-500">Football Intelligence</span>
-              </a>
-              <a
-                href="https://kasilink.online"
-                target="_blank"
-                rel="noreferrer"
-                className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
-              >
-                <span className="font-bold text-purple-400">KasiLink</span>
-                <span className="text-[9px] text-gray-500">Township Gig Engine</span>
-              </a>
-              <div className="my-1 border-t border-gray-800/80" />
-              <a
-                href="https://krrababalela.com"
-                target="_blank"
-                rel="noreferrer"
-                className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
-              >
-                <span className="font-bold text-white">Chief Architect</span>
-                <span className="text-[9px] text-gray-500">KRR Sovereign Systems</span>
-              </a>
+          {!epochRoot && (
+            <div className="relative group hidden md:block mr-2">
+              <button className="flex min-h-[38px] items-center gap-1.5 px-2.5 py-1 text-xs font-mono tracking-wider text-gray-400 hover:text-white rounded-lg border border-gray-800 bg-gray-900/60 transition hover:border-gray-700">
+                <span className="text-green-400 font-bold">KPGS</span> ▾
+              </button>
+              <div className="absolute right-0 top-full mt-2 w-56 bg-gray-950/98 border border-gray-800 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] hidden group-hover:block backdrop-blur-xl p-1.5 z-50">
+                <a
+                  href="https://kopanolabs.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
+                >
+                  <span className="font-bold text-green-400">Kopano Labs</span>
+                  <span className="text-[9px] text-gray-500">Autonomous Sovereign Hub</span>
+                </a>
+                <a
+                  href="https://fivesarena.com"
+                  className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
+                >
+                  <span className="font-bold text-yellow-400">Bookit 5s Arena</span>
+                  <span className="text-[9px] text-gray-500">5-a-Side Hellenic FC</span>
+                </a>
+                <a
+                  href="https://blog.fivesarena.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
+                >
+                  <span className="font-bold text-blue-400">The 5s Blog</span>
+                  <span className="text-[9px] text-gray-500">Football Intelligence</span>
+                </a>
+                <a
+                  href="https://kasilink.online"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
+                >
+                  <span className="font-bold text-purple-400">KasiLink</span>
+                  <span className="text-[9px] text-gray-500">Township Gig Engine</span>
+                </a>
+                <div className="my-1 border-t border-gray-800/80" />
+                <a
+                  href="https://krrababalela.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex flex-col p-2 rounded-lg text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800/80 transition"
+                >
+                  <span className="font-bold text-white">Chief Architect</span>
+                  <span className="text-[9px] text-gray-500">KRR Sovereign Systems</span>
+                </a>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ── Actions (Profile, Logout, Theme, Mobile Toggle) ── */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">

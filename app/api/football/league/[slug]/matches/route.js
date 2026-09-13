@@ -10,7 +10,11 @@ export async function GET(request, context) {
     const season = searchParams.get("season") || new Date().getFullYear();
     const payload = await getLeagueMatches(slug, season);
 
-    return NextResponse.json(payload);
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error.message || "Failed to load matches" },

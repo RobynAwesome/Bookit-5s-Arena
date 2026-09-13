@@ -41,11 +41,31 @@ export default function HomeLiveFixtures() {
     }
 
     fetchMatches();
-    const interval = setInterval(fetchMatches, 60000); // Update every minute
+
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return; // Do not burn network or battery while the tab is backgrounded
+      }
+      fetchMatches();
+    }, 60000);
+
+    const onVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchMatches();
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
+
     return () => {
       cancelled = true;
       fetchGeneration.current += 1;
       clearInterval(interval);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
     };
   }, []);
 

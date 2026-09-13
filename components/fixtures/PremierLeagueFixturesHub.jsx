@@ -17,11 +17,13 @@ import {
   FaTimes,
   FaTrophy,
 } from "react-icons/fa";
+import { loadLeagueHubBundle } from "@/lib/offline/fixturesVaultClient";
+import VaultFreshnessRibbon from "@/components/fixtures/VaultFreshnessRibbon";
 
 function TeamBadge({ team }) {
   return (
     <div className="flex items-center gap-3 min-w-0">
-      <div className="relative h-9 w-9 shrink-0 rounded-full bg-white/90 ring-1 ring-black/10">
+      <div className="relative h-9 w-9 shrink-0 rounded-full bg-white/10 ring-1 ring-white/10">
         {team?.logo ? (
           <Image
             src={team.logo}
@@ -31,13 +33,13 @@ function TeamBadge({ team }) {
             className="object-contain p-1"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-900 text-[10px] font-black uppercase text-white">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-800 text-[10px] font-black uppercase text-white">
             {team?.shortName?.slice(0, 3) || team?.name?.slice(0, 3) || "FC"}
           </div>
         )}
       </div>
       <div className="min-w-0">
-        <div className="truncate text-sm font-semibold text-zinc-950">
+        <div className="truncate text-sm font-semibold text-white">
           {team?.name || "Team TBD"}
         </div>
       </div>
@@ -48,12 +50,12 @@ function TeamBadge({ team }) {
 function StatusPill({ status, minute }) {
   const state = status?.state || "scheduled";
   const tone = {
-    live: "bg-rose-100 text-rose-700 border-rose-200",
-    completed: "bg-zinc-100 text-zinc-700 border-zinc-200",
-    postponed: "bg-amber-100 text-amber-700 border-amber-200",
-    cancelled: "bg-zinc-100 text-zinc-500 border-zinc-200",
-    scheduled: "bg-sky-100 text-sky-700 border-sky-200",
-  }[state] || "bg-sky-100 text-sky-700 border-sky-200";
+    live: "bg-rose-500/20 text-rose-400 border-rose-500/30",
+    completed: "bg-zinc-800/60 text-zinc-400 border-zinc-700/50",
+    postponed: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    cancelled: "bg-zinc-800/40 text-zinc-500 border-zinc-700/40",
+    scheduled: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  }[state] || "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
 
   return (
     <span
@@ -77,24 +79,24 @@ function MatchCard({ match, index }) {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, delay: index * 0.03 }}
-      className="grid gap-4 border-t border-zinc-200 px-4 py-5 sm:grid-cols-[1fr_auto] sm:px-6"
+      className="grid gap-4 border-t border-white/5 px-4 py-5 sm:grid-cols-[1fr_auto] sm:px-6 hover:bg-white/[0.02] transition-colors"
     >
       <div className="grid gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-zinc-400">
           <span>{match.weekLabel}</span>
-          <span className="h-1 w-1 rounded-full bg-zinc-300" />
+          <span className="h-1 w-1 rounded-full bg-zinc-700" />
           <span>{match.competitionPhase}</span>
         </div>
         <div className="grid gap-3">
           <div className="flex items-center justify-between gap-4">
             <TeamBadge team={match.home} />
-            <div className="min-w-[52px] text-right text-lg font-black text-zinc-950">
+            <div className="min-w-[52px] text-right text-lg font-black text-white">
               {hasScore ? match.score.home : "-"}
             </div>
           </div>
           <div className="flex items-center justify-between gap-4">
             <TeamBadge team={match.away} />
-            <div className="min-w-[52px] text-right text-lg font-black text-zinc-950">
+            <div className="min-w-[52px] text-right text-lg font-black text-white">
               {hasScore ? match.score.away : "-"}
             </div>
           </div>
@@ -103,18 +105,18 @@ function MatchCard({ match, index }) {
       <div className="flex min-w-[140px] flex-col items-start justify-between gap-3 sm:items-end">
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill status={match.status} minute={match.minute} />
-          {match.provider === "isports" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-violet-700">
+          {match.provider === "isports" && match.status?.state === "live" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-green-400 border border-green-500/20">
               <FaBroadcastTower size={9} />
-              Live Data
+              Live
             </span>
           )}
         </div>
-        <div className="text-sm font-semibold text-zinc-900">
+        <div className="text-sm font-semibold text-zinc-200">
           {match.kickoffLabel}
         </div>
-        <div className="max-w-[180px] text-xs text-zinc-500">
-          {match.venue || "Premier League venue update pending"}
+        <div className="max-w-[180px] text-xs text-zinc-400 text-right">
+          {match.venue || "Venue status pending"}
         </div>
       </div>
     </motion.article>
@@ -233,16 +235,16 @@ function StandingsTable({ rows, onSelectTeam, loadingTeamId }) {
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse">
         <thead>
-          <tr className="border-b border-zinc-200 bg-zinc-50 text-left text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500">
+          <tr className="border-b border-white/10 bg-zinc-900/60 text-left text-[11px] font-black uppercase tracking-[0.18em] text-zinc-400">
             <th className="px-4 py-4 sm:px-6">Team</th>
-            <th className="px-3 py-4 text-right">Pts</th>
-            <th className="px-3 py-4 text-right">MP</th>
-            <th className="px-3 py-4 text-right">W</th>
-            <th className="px-3 py-4 text-right">L</th>
-            <th className="px-3 py-4 text-right">D</th>
-            <th className="px-3 py-4 text-right">GF</th>
-            <th className="px-3 py-4 text-right">GA</th>
-            <th className="px-3 py-4 text-right">GD</th>
+            <th className="px-3 py-4 text-right"><abbr title="Points" className="no-underline text-emerald-400">Pts</abbr></th>
+            <th className="px-3 py-4 text-right"><abbr title="Matches Played" className="no-underline">MP</abbr></th>
+            <th className="px-3 py-4 text-right"><abbr title="Won" className="no-underline">W</abbr></th>
+            <th className="px-3 py-4 text-right"><abbr title="Lost" className="no-underline">L</abbr></th>
+            <th className="px-3 py-4 text-right"><abbr title="Drawn" className="no-underline">D</abbr></th>
+            <th className="px-3 py-4 text-right"><abbr title="Goals For" className="no-underline">GF</abbr></th>
+            <th className="px-3 py-4 text-right"><abbr title="Goals Against" className="no-underline">GA</abbr></th>
+            <th className="px-3 py-4 text-right"><abbr title="Goal Difference" className="no-underline">GD</abbr></th>
             <th className="px-4 py-4 sm:px-6">Last 5</th>
           </tr>
         </thead>
@@ -250,15 +252,15 @@ function StandingsTable({ rows, onSelectTeam, loadingTeamId }) {
           {rows.map((row) => (
             <tr
               key={row.teamId}
-              className="border-b border-zinc-200 transition hover:bg-violet-50/60"
+              className="border-b border-white/5 transition hover:bg-white/[0.03]"
             >
               <td className="px-4 py-4 sm:px-6">
                 <button
                   onClick={() => onSelectTeam(row.teamId)}
                   className="flex w-full items-center gap-3 text-left"
                 >
-                  <span className="w-7 text-sm font-black text-zinc-500">{row.rank}</span>
-                  <div className="relative h-9 w-9 shrink-0 rounded-full bg-white">
+                  <span className="w-7 text-sm font-black text-zinc-400">{row.rank}</span>
+                  <div className="relative h-9 w-9 shrink-0 rounded-full bg-white/10 ring-1 ring-white/10">
                     <Image
                       src={row.team.logo}
                       alt={row.team.name}
@@ -267,24 +269,26 @@ function StandingsTable({ rows, onSelectTeam, loadingTeamId }) {
                       className="object-contain p-1"
                     />
                   </div>
-                  <span className="truncate text-sm font-semibold text-zinc-950">
+                  <span className="truncate text-sm font-semibold text-white">
                     {row.team.name}
                   </span>
                   {loadingTeamId === row.teamId && (
-                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
+                    <span className="text-xs font-bold uppercase tracking-[0.14em] text-green-400 animate-pulse">
                       Loading
                     </span>
                   )}
                 </button>
               </td>
-              <td className="px-3 py-4 text-right font-black text-zinc-950">{row.points}</td>
-              <td className="px-3 py-4 text-right text-sm text-zinc-700">{row.played}</td>
-              <td className="px-3 py-4 text-right text-sm text-zinc-700">{row.won}</td>
-              <td className="px-3 py-4 text-right text-sm text-zinc-700">{row.lost}</td>
-              <td className="px-3 py-4 text-right text-sm text-zinc-700">{row.draw}</td>
-              <td className="px-3 py-4 text-right text-sm text-zinc-700">{row.goalsFor}</td>
-              <td className="px-3 py-4 text-right text-sm text-zinc-700">{row.goalsAgainst}</td>
-              <td className="px-3 py-4 text-right text-sm text-zinc-700">{row.goalDifference}</td>
+              <td className="px-3 py-4 text-right font-black text-emerald-400">{row.points}</td>
+              <td className="px-3 py-4 text-right text-sm text-zinc-300">{row.played}</td>
+              <td className="px-3 py-4 text-right text-sm text-zinc-300">{row.won}</td>
+              <td className="px-3 py-4 text-right text-sm text-zinc-300">{row.lost}</td>
+              <td className="px-3 py-4 text-right text-sm text-zinc-300">{row.draw}</td>
+              <td className="px-3 py-4 text-right text-sm text-zinc-300">{row.goalsFor}</td>
+              <td className="px-3 py-4 text-right text-sm text-zinc-300">{row.goalsAgainst}</td>
+              <td className="px-3 py-4 text-right text-sm text-zinc-300 font-medium">
+                {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+              </td>
               <td className="px-4 py-4 sm:px-6">
                 <div className="flex gap-1">
                   {row.lastFive.map((item) => (
@@ -301,6 +305,15 @@ function StandingsTable({ rows, onSelectTeam, loadingTeamId }) {
 }
 
 function TeamAnalysisDrawer({ analysis, onClose }) {
+  useEffect(() => {
+    if (!analysis) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [analysis, onClose]);
+
   if (!analysis) {
     return null;
   }
@@ -311,20 +324,20 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-zinc-950/45 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.aside
-          initial={{ x: 420 }}
+          initial={{ x: "100%" }}
           animate={{ x: 0 }}
-          exit={{ x: 420 }}
+          exit={{ x: "100%" }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
-          className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-white shadow-2xl"
+          className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-zinc-950/95 border-l border-white/10 shadow-2xl backdrop-blur-xl text-white"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-6 py-5">
+          <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
             <div className="flex items-center gap-4">
-              <div className="relative h-14 w-14 rounded-full bg-zinc-50">
+              <div className="relative h-14 w-14 rounded-full bg-white/10 ring-1 ring-white/15 p-2">
                 <Image
                   src={analysis.team.logo}
                   alt={analysis.team.name}
@@ -334,18 +347,19 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
                 />
               </div>
               <div>
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-green-400">
                   Team analysis
                 </div>
-                <h3 className="text-2xl font-black text-zinc-950">{analysis.team.name}</h3>
-                <p className="text-sm text-zinc-500">
+                <h3 className="text-2xl font-black text-white">{analysis.team.name}</h3>
+                <p className="text-sm text-zinc-400">
                   Rank {analysis.summary.rank} · {analysis.summary.points} points
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="rounded-full bg-zinc-100 p-2 text-zinc-600 transition hover:bg-zinc-200"
+              aria-label="Close team analysis drawer"
+              className="rounded-full bg-zinc-800 p-2.5 text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
             >
               <FaTimes />
             </button>
@@ -353,18 +367,18 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
 
           <div className="space-y-6 px-6 py-6">
             <section className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[22px] border border-zinc-200 bg-zinc-50 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Streak</div>
-                <div className="mt-2 text-sm font-semibold text-zinc-950">{analysis.summary.streak}</div>
+              <div className="rounded-[22px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Streak</div>
+                <div className="mt-2 text-sm font-semibold text-white">{analysis.summary.streak}</div>
               </div>
-              <div className="rounded-[22px] border border-zinc-200 bg-zinc-50 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Goals</div>
-                <div className="mt-2 text-sm font-semibold text-zinc-950">
+              <div className="rounded-[22px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Goals</div>
+                <div className="mt-2 text-sm font-semibold text-white">
                   {analysis.summary.goalsFor} scored · {analysis.summary.goalsAgainst} conceded
                 </div>
               </div>
-              <div className="rounded-[22px] border border-zinc-200 bg-zinc-50 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Last 5</div>
+              <div className="rounded-[22px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Last 5</div>
                 <div className="mt-2 flex gap-1">
                   {analysis.lastFive.map((item) => (
                     <FormDot key={`${analysis.team.id}-${item.fixtureId}`} result={item.result} />
@@ -374,17 +388,17 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
             </section>
 
             <section className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-zinc-200 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Home split</div>
-                <div className="mt-3 space-y-2 text-sm text-zinc-700">
+              <div className="rounded-[24px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Home split</div>
+                <div className="mt-3 space-y-2 text-sm text-zinc-300">
                   <div>{analysis.home.points} pts from {analysis.home.played} matches</div>
                   <div>{analysis.home.won}W · {analysis.home.draw}D · {analysis.home.lost}L</div>
                   <div>{analysis.home.goalsFor}-{analysis.home.goalsAgainst} goals</div>
                 </div>
               </div>
-              <div className="rounded-[24px] border border-zinc-200 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Away split</div>
-                <div className="mt-3 space-y-2 text-sm text-zinc-700">
+              <div className="rounded-[24px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Away split</div>
+                <div className="mt-3 space-y-2 text-sm text-zinc-300">
                   <div>{analysis.away.points} pts from {analysis.away.played} matches</div>
                   <div>{analysis.away.won}W · {analysis.away.draw}D · {analysis.away.lost}L</div>
                   <div>{analysis.away.goalsFor}-{analysis.away.goalsAgainst} goals</div>
@@ -393,28 +407,28 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
             </section>
 
             <section className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-zinc-200 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Next fixtures</div>
+              <div className="rounded-[24px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Next fixtures</div>
                 <div className="mt-3 space-y-3">
                   {analysis.nextFixtures.length ? analysis.nextFixtures.map((fixture) => (
-                    <div key={fixture.fixtureId} className="rounded-2xl bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
-                      <div className="font-semibold text-zinc-950">
+                    <div key={fixture.fixtureId} className="rounded-2xl border border-white/5 bg-zinc-800/60 px-3.5 py-3 text-sm text-zinc-200">
+                      <div className="font-semibold text-white">
                         {fixture.isHome ? "vs" : "at"} {fixture.opponent.name}
                       </div>
-                      <div className="text-xs text-zinc-500">{fixture.dateLabel}</div>
+                      <div className="text-xs text-zinc-400">{fixture.dateLabel}</div>
                     </div>
-                  )) : <div className="text-sm text-zinc-500">No upcoming fixtures in the current window.</div>}
+                  )) : <div className="text-sm text-zinc-400">No upcoming fixtures in the current window.</div>}
                 </div>
               </div>
-              <div className="rounded-[24px] border border-zinc-200 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Recent results</div>
+              <div className="rounded-[24px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Recent results</div>
                 <div className="mt-3 space-y-3">
                   {analysis.recentResults.map((fixture) => (
-                    <div key={fixture.fixtureId} className="rounded-2xl bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
-                      <div className="font-semibold text-zinc-950">
+                    <div key={fixture.fixtureId} className="rounded-2xl border border-white/5 bg-zinc-800/60 px-3.5 py-3 text-sm text-zinc-200">
+                      <div className="font-semibold text-white">
                         {fixture.isHome ? "vs" : "at"} {fixture.opponent.name}
                       </div>
-                      <div className="text-xs text-zinc-500">{fixture.dateLabel}</div>
+                      <div className="text-xs text-zinc-400">{fixture.dateLabel}</div>
                     </div>
                   ))}
                 </div>
@@ -422,8 +436,8 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
             </section>
 
             <section className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-zinc-200 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Related articles</div>
+              <div className="rounded-[24px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Related articles</div>
                 <div className="mt-3 space-y-3">
                   {analysis.relatedArticles.length ? analysis.relatedArticles.map((article) => (
                     <a
@@ -431,15 +445,15 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
                       href={article.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block rounded-2xl bg-zinc-50 px-3 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-violet-50"
+                      className="block rounded-2xl border border-white/5 bg-zinc-800/60 px-3.5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 hover:border-green-500/30"
                     >
                       {article.title}
                     </a>
-                  )) : <div className="text-sm text-zinc-500">No team-specific articles were found in the current article window.</div>}
+                  )) : <div className="text-sm text-zinc-400">No team-specific articles were found in the current article window.</div>}
                 </div>
               </div>
-              <div className="rounded-[24px] border border-zinc-200 p-4">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">Related videos</div>
+              <div className="rounded-[24px] border border-white/10 bg-zinc-900/60 p-4">
+                <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Related videos</div>
                 <div className="mt-3 space-y-3">
                   {analysis.relatedVideos.length ? analysis.relatedVideos.map((video) => (
                     <a
@@ -447,11 +461,11 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
                       href={video.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block rounded-2xl bg-zinc-50 px-3 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-violet-50"
+                      className="block rounded-2xl border border-white/5 bg-zinc-800/60 px-3.5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 hover:border-green-500/30"
                     >
                       {video.reactor?.name || video.channelName}: {video.title}
                     </a>
-                  )) : <div className="text-sm text-zinc-500">YouTube enrichment is not available right now for this team.</div>}
+                  )) : <div className="text-sm text-zinc-400">YouTube enrichment is not available right now for this team.</div>}
                 </div>
               </div>
             </section>
@@ -464,30 +478,30 @@ function TeamAnalysisDrawer({ analysis, onClose }) {
 
 function StatsLeaderboard({ leaders }) {
   return (
-    <div className="divide-y divide-zinc-200">
+    <div className="divide-y divide-white/5">
       {leaders.map((leader, index) => (
         <motion.article
           key={`${leader.player.id}-${leader.stat.key}`}
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: index * 0.03 }}
-          className="grid gap-4 px-4 py-4 sm:grid-cols-[1.2fr_1fr_auto] sm:px-6"
+          className="grid gap-4 px-4 py-4 sm:grid-cols-[1.2fr_1fr_auto] sm:px-6 hover:bg-white/[0.02] transition-colors"
         >
           <div className="flex items-center gap-4">
-            <div className="w-7 text-sm font-black text-zinc-500">{leader.rank}</div>
+            <div className="w-7 text-sm font-black text-zinc-400">{leader.rank}</div>
             <PlayerAvatar player={leader.player} />
             <div className="min-w-0">
-              <div className="truncate text-lg font-semibold text-zinc-950">
+              <div className="truncate text-lg font-semibold text-white">
                 {leader.player.name}
               </div>
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                 Premier League
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative h-10 w-10 shrink-0 rounded-full bg-zinc-50 ring-1 ring-black/5">
+            <div className="relative h-10 w-10 shrink-0 rounded-full bg-white/10 ring-1 ring-white/10">
               {leader.team.logo ? (
                 <Image
                   src={leader.team.logo}
@@ -497,25 +511,25 @@ function StatsLeaderboard({ leaders }) {
                   className="object-contain p-1"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-900 text-[10px] font-black uppercase text-white">
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-800 text-[10px] font-black uppercase text-white">
                   {leader.team.shortName || leader.team.name?.slice(0, 3) || "FC"}
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <div className="truncate text-base font-semibold text-zinc-950">
+              <div className="truncate text-base font-semibold text-white">
                 {leader.team.name}
               </div>
-              <div className="text-xs text-zinc-500">{leader.minutes} minutes</div>
+              <div className="text-xs text-zinc-400">{leader.minutes} minutes</div>
             </div>
           </div>
 
           <div className="flex items-center justify-start sm:justify-end">
-            <div className="rounded-[20px] bg-violet-900 px-4 py-3 text-right text-white shadow-[0_12px_30px_rgba(76,29,149,0.18)]">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-200">
+            <div className="rounded-[20px] bg-emerald-950/80 border border-emerald-500/30 px-4 py-3 text-right text-white shadow-[0_0_20px_rgba(34,197,94,0.15)]">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">
                 {leader.stat.shortLabel}
               </div>
-              <div className="text-2xl font-black">{leader.stat.value}</div>
+              <div className="text-2xl font-black text-emerald-400">{leader.stat.value}</div>
             </div>
           </div>
         </motion.article>
@@ -552,6 +566,7 @@ export default function PremierLeagueFixturesHub() {
   const [standingsError, setStandingsError] = useState("");
   const [statsError, setStatsError] = useState("");
   const [teamError, setTeamError] = useState("");
+  const [vaultMeta, setVaultMeta] = useState(null);
 
   const formatRelativeTime = (value) => {
     if (!value) {
@@ -647,20 +662,21 @@ export default function PremierLeagueFixturesHub() {
 
     async function loadMatches() {
       try {
-        const response = await fetch(
-          `/api/football/league/premier-league/matches?season=${season}`,
-          {
-            cache: "no-store",
+        const bundle = await loadLeagueHubBundle("premier-league", {
+          season,
+          onPartial: (partial) => {
+            if (cancelled) return;
+            if (partial.meta) setMeta((prev) => prev || partial.meta);
+            if (partial.matches) setMatchesPayload(partial.matches);
+            if (partial.vault) setVaultMeta(partial.vault);
+            setLoading(false);
           },
-        );
-        const payload = await response.json();
-
-        if (!response.ok) {
-          throw new Error(payload.error || "Failed to load matches");
-        }
+        });
 
         if (!cancelled) {
-          setMatchesPayload(payload);
+          if (bundle.meta) setMeta((prev) => prev || bundle.meta);
+          if (bundle.matches) setMatchesPayload(bundle.matches);
+          if (bundle.vault) setVaultMeta(bundle.vault);
           setError("");
           setLoading(false);
         }
@@ -890,14 +906,15 @@ export default function PremierLeagueFixturesHub() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f6f3ff_0%,#f8f5ef_42%,#f5f5f5_100%)] px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-transparent px-0 py-2 sm:py-4">
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-[32px] border border-violet-200/70 bg-white shadow-[0_24px_80px_rgba(51,14,82,0.08)]">
-          <div className="relative overflow-hidden bg-[linear-gradient(120deg,#4b024e_0%,#5b2363_45%,#d4c4d7_100%)] px-6 py-8 text-white sm:px-8">
-            <div className="absolute inset-y-0 right-0 w-1/3 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.15)_45%,rgba(255,255,255,0.35)_100%)]" />
+        <VaultFreshnessRibbon vault={vaultMeta?.matches || vaultMeta?.meta} />
+        <section className="overflow-hidden rounded-[32px] border border-white/10 bg-zinc-950/80 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
+          <div className="relative overflow-hidden bg-[linear-gradient(120deg,#2e0836_0%,#180624_45%,#061a12_100%)] border-b border-white/10 px-6 py-8 text-white sm:px-8">
+            <div className="absolute inset-y-0 right-0 w-1/3 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.05)_45%,rgba(34,197,94,0.08)_100%)]" />
             <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-4">
-                <div className="relative h-16 w-16 rounded-2xl bg-white/95 p-2 shadow-lg">
+                <div className="relative h-16 w-16 rounded-2xl bg-white/10 ring-1 ring-white/15 p-2 shadow-lg">
                   <Image
                     src={meta?.league?.logo || "https://resources.premierleague.com/premierleague/badges/70/t43.png"}
                     alt="Premier League"
@@ -907,22 +924,22 @@ export default function PremierLeagueFixturesHub() {
                   />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-black tracking-tight text-white">
+                  <h1 className="text-3xl font-black tracking-tight text-white uppercase">
                     Premier League
                   </h1>
-                  <p className="mt-1 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-semibold">
+                  <p className="mt-1 inline-flex rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-green-400">
                     {matchesPayload?.season?.label || meta?.league?.seasonLabel || "2025-26 Season"}
                   </p>
                 </div>
               </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/85">
+                  <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-zinc-300">
                     {meta?.provider?.name || "Provider pending"}
                   </div>
                 <Link
                   href={meta?.arenaLink?.href || "/fixtures/arena"}
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-violet-900 transition hover:bg-violet-50"
+                  className="inline-flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm font-bold text-green-300 transition hover:bg-green-500/20"
                 >
                   {meta?.arenaLink?.label || "Arena Fixtures"}
                   <FaArrowRight size={12} />
@@ -931,24 +948,24 @@ export default function PremierLeagueFixturesHub() {
             </div>
           </div>
 
-          <div className="border-b border-zinc-200 bg-white px-4 sm:px-8">
+          <div className="border-b border-white/10 bg-zinc-900/60 backdrop-blur-md px-4 sm:px-8">
             <div className="flex flex-wrap items-center justify-between gap-4 py-4">
               <nav className="flex flex-wrap gap-1">
                 {(meta?.tabs || []).map((tab) => (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`relative px-5 py-3 text-sm font-black uppercase tracking-[0.18em] ${
+                    className={`relative px-5 py-3 text-sm font-black uppercase tracking-[0.18em] transition-colors ${
                       activeTab === tab.key
-                        ? "text-zinc-950"
-                        : "text-zinc-500 hover:text-zinc-800"
+                        ? "text-white"
+                        : "text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
                     {tab.label}
                     {activeTab === tab.key && (
                       <motion.span
                         layoutId="fixtures-tab"
-                        className="absolute inset-x-0 bottom-0 h-1 rounded-full bg-violet-800"
+                        className="absolute inset-x-0 bottom-0 h-1 rounded-full bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.6)]"
                       />
                     )}
                   </button>
@@ -956,7 +973,7 @@ export default function PremierLeagueFixturesHub() {
               </nav>
 
               <div className="flex flex-wrap items-center gap-3">
-                <label className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                <label className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                   Season
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -966,8 +983,8 @@ export default function PremierLeagueFixturesHub() {
                       onClick={() => setSeason(String(option.year))}
                       className={`rounded-full px-4 py-2 text-sm font-bold transition ${
                         String(option.year) === season
-                          ? "bg-violet-900 text-white"
-                          : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                          ? "bg-green-500 text-black shadow-lg shadow-green-500/30 font-black"
+                          : "border border-white/5 bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white"
                       }`}
                     >
                       {option.label}
@@ -985,18 +1002,18 @@ export default function PremierLeagueFixturesHub() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-[#faf7f2]"
+                className="bg-transparent"
               >
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200 px-4 py-5 sm:px-8">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 bg-zinc-900/40 px-4 py-5 sm:px-8">
                   <div className="space-y-1">
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                       Match Window
                     </p>
-                    <h2 className="text-2xl font-black text-zinc-950">
+                    <h2 className="text-2xl font-black text-white">
                       Live schedule and results
                     </h2>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
                     <FaClock size={12} />
                     <ProviderBadge provider={matchesPayload?.provider} fallbackLabel="Match data" />
                     <span>
@@ -1012,7 +1029,7 @@ export default function PremierLeagueFixturesHub() {
                     {Array.from({ length: 6 }).map((_, index) => (
                       <div
                         key={index}
-                        className="h-40 animate-pulse rounded-[28px] border border-zinc-200 bg-white"
+                        className="h-40 animate-pulse rounded-[28px] border border-white/5 bg-zinc-900/50"
                       />
                     ))}
                   </div>
@@ -1025,12 +1042,12 @@ export default function PremierLeagueFixturesHub() {
                     {matchesPayload.groups.map((group) => (
                       <section
                         key={group.dateKey}
-                        className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white"
+                        className="overflow-hidden rounded-[28px] border border-white/10 bg-zinc-900/50 backdrop-blur-md"
                       >
-                        <div className="border-b border-zinc-200 px-4 py-4 text-2xl font-black text-zinc-950 sm:px-6">
+                        <div className="border-b border-white/5 bg-zinc-950/40 px-4 py-4 text-2xl font-black text-white sm:px-6">
                           {group.dateLabel}
                         </div>
-                        <div className="grid divide-y divide-zinc-200 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+                        <div className="grid divide-y divide-white/5 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
                           {group.matches.map((match, index) => (
                             <MatchCard key={match.id} match={match} index={index} />
                           ))}
@@ -1051,13 +1068,13 @@ export default function PremierLeagueFixturesHub() {
               </motion.div>
             ) : activeTab === "news" ? (
               <motion.div key="news" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="grid gap-6 bg-[#faf7f2] px-4 py-6 sm:px-8 lg:grid-cols-[1.35fr_0.85fr]">
-                  <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white">
-                    <div className="border-b border-zinc-200 px-6 py-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                <div className="grid gap-6 bg-transparent px-4 py-6 sm:px-8 lg:grid-cols-[1.35fr_0.85fr]">
+                  <section className="overflow-hidden rounded-[28px] border border-white/10 bg-zinc-900/50 backdrop-blur-md">
+                    <div className="border-b border-white/10 bg-zinc-950/40 px-6 py-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                         Editorial feed
                       </p>
-                      <h2 className="mt-2 text-2xl font-black text-zinc-950">
+                      <h2 className="mt-2 text-2xl font-black text-white">
                         Live Premier League headlines
                       </h2>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1076,39 +1093,39 @@ export default function PremierLeagueFixturesHub() {
                         {Array.from({ length: 4 }).map((_, index) => (
                           <div
                             key={index}
-                            className="h-36 animate-pulse rounded-[24px] border border-zinc-200 bg-zinc-50"
+                            className="h-36 animate-pulse rounded-[24px] border border-white/5 bg-zinc-900/50"
                           />
                         ))}
                       </div>
                     ) : newsPayload?.articles?.length ? (
-                      <div className="divide-y divide-zinc-200">
+                      <div className="divide-y divide-white/5">
                         {newsPayload.articles.map((article) => (
                           <a
                             key={article.url}
                             href={article.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="grid gap-4 px-5 py-5 transition hover:bg-zinc-50 sm:grid-cols-[1fr_260px]"
+                            className="grid gap-4 px-5 py-5 transition hover:bg-white/[0.03] sm:grid-cols-[1fr_260px]"
                           >
                             <div className="space-y-3">
-                              <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
-                                <span className="font-black text-zinc-700">{article.source}</span>
+                              <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+                                <span className="font-black text-zinc-200">{article.source}</span>
                                 <span>&middot;</span>
                                 <span>{formatRelativeTime(article.publishedAt)}</span>
                               </div>
-                              <h3 className="text-2xl font-semibold leading-tight text-zinc-950">
+                              <h3 className="text-2xl font-semibold leading-tight text-white">
                                 {article.title}
                               </h3>
-                              <p className="text-sm leading-6 text-zinc-600">
+                              <p className="text-sm leading-6 text-zinc-300">
                                 {article.summary}
                               </p>
                             </div>
                             <div
-                              className="min-h-[180px] rounded-[22px] border border-zinc-200 bg-zinc-100 bg-cover bg-center"
+                              className="min-h-[180px] rounded-[22px] border border-white/10 bg-zinc-800/80 bg-cover bg-center"
                               style={{
                                 backgroundImage: article.image
-                                  ? `linear-gradient(rgba(0,0,0,0.04), rgba(0,0,0,0.12)), url("${article.image}")`
-                                  : "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)",
+                                  ? `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.5)), url("${article.image}")`
+                                  : "linear-gradient(135deg, #180624 0%, #061a12 100%)",
                               }}
                             />
                           </a>
@@ -1124,12 +1141,12 @@ export default function PremierLeagueFixturesHub() {
                   </section>
 
                   <section className="space-y-5">
-                    <div className="rounded-[28px] border border-zinc-200 bg-white">
-                      <div className="border-b border-zinc-200 px-6 py-5">
-                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    <div className="rounded-[28px] border border-white/10 bg-zinc-900/50 backdrop-blur-md">
+                      <div className="border-b border-white/10 bg-zinc-950/40 px-6 py-5">
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                           Reactor channels
                         </p>
-                        <h3 className="mt-2 text-xl font-black text-zinc-950">
+                        <h3 className="mt-2 text-xl font-black text-white">
                           YouTube watchlist
                         </h3>
                       </div>
@@ -1139,7 +1156,7 @@ export default function PremierLeagueFixturesHub() {
                           {Array.from({ length: 3 }).map((_, index) => (
                             <div
                               key={index}
-                              className="h-28 animate-pulse rounded-[22px] border border-zinc-200 bg-zinc-50"
+                              className="h-28 animate-pulse rounded-[22px] border border-white/5 bg-zinc-900/50"
                             />
                           ))}
                         </div>
@@ -1151,19 +1168,19 @@ export default function PremierLeagueFixturesHub() {
                               href={video.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="flex gap-4 rounded-[22px] border border-zinc-200 p-3 transition hover:border-violet-300 hover:bg-violet-50/40"
+                              className="flex gap-4 rounded-[22px] border border-white/10 bg-zinc-800/40 p-3 transition hover:border-green-500/30 hover:bg-zinc-800/80"
                             >
                               <div
-                                className="h-24 w-36 shrink-0 rounded-[18px] bg-zinc-100 bg-cover bg-center"
+                                className="h-24 w-36 shrink-0 rounded-[18px] bg-zinc-800 bg-cover bg-center"
                                 style={{
-                                  backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2)), url("${video.thumbnail}")`,
+                                  backgroundImage: `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.4)), url("${video.thumbnail}")`,
                                 }}
                               />
                               <div className="min-w-0">
-                                <div className="truncate text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
+                                <div className="truncate text-xs font-bold uppercase tracking-[0.14em] text-green-400">
                                   {video.reactor?.name || video.channelName}
                                 </div>
-                                <div className="mt-2 line-clamp-3 text-sm font-semibold leading-5 text-zinc-950">
+                                <div className="mt-2 line-clamp-3 text-sm font-semibold leading-5 text-white">
                                   {video.title}
                                 </div>
                               </div>
@@ -1171,13 +1188,13 @@ export default function PremierLeagueFixturesHub() {
                           ))}
                         </div>
                       ) : (
-                        <div className="px-6 py-6 text-sm leading-6 text-zinc-500">
+                        <div className="px-6 py-6 text-sm leading-6 text-zinc-400">
                           Highlight reels are not available right now. Browse match news above or check back closer to kick-off.
                         </div>
                       )}
                     </div>
 
-                    <div className="rounded-[28px] border border-zinc-200 bg-zinc-950 p-6 text-white">
+                    <div className="rounded-[28px] border border-white/10 bg-zinc-900/60 p-6 text-white">
                       <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                         Provider mix
                       </p>
@@ -1190,17 +1207,17 @@ export default function PremierLeagueFixturesHub() {
               </motion.div>
             ) : activeTab === "standings" ? (
               <motion.div key="standings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="grid gap-6 bg-[#faf7f2] px-4 py-6 sm:px-8">
-                  <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white">
-                    <div className="border-b border-zinc-200 px-6 py-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                <div className="grid gap-6 bg-transparent px-4 py-6 sm:px-8">
+                  <section className="overflow-hidden rounded-[28px] border border-white/10 bg-zinc-900/50 backdrop-blur-md">
+                    <div className="border-b border-white/10 bg-zinc-950/40 px-6 py-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                         Standings views
                       </p>
                       <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <h2 className="text-2xl font-black text-zinc-950">
+                        <h2 className="text-2xl font-black text-white">
                           Rearrangeable league table
                         </h2>
-                        <p className="text-sm text-zinc-500">
+                        <p className="text-sm text-zinc-400">
                           Drag the inner pills to reorder them, then click any team for analysis.
                         </p>
                       </div>
@@ -1209,7 +1226,7 @@ export default function PremierLeagueFixturesHub() {
                       </div>
                     </div>
 
-                    <div className="border-b border-zinc-200 px-4 py-4 sm:px-6">
+                    <div className="border-b border-white/10 bg-zinc-900/40 px-4 py-4 sm:px-6">
                       <Reorder.Group
                         axis="x"
                         values={standingsViewOrder}
@@ -1220,10 +1237,10 @@ export default function PremierLeagueFixturesHub() {
                           <Reorder.Item
                             key={viewKey}
                             value={viewKey}
-                            className={`list-none rounded-full border px-4 py-2 text-sm font-bold cursor-grab ${
+                            className={`list-none rounded-full border px-4 py-2 text-sm font-bold cursor-grab transition ${
                               activeStandingsView === viewKey
-                                ? "border-violet-900 bg-violet-900 text-white"
-                                : "border-zinc-200 bg-zinc-50 text-zinc-600"
+                                ? "border-green-500 bg-green-500 text-black shadow-lg shadow-green-500/25"
+                                : "border-white/10 bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white"
                             }`}
                             onClick={() => setActiveStandingsView(viewKey)}
                           >
@@ -1250,7 +1267,7 @@ export default function PremierLeagueFixturesHub() {
                         {Array.from({ length: 8 }).map((_, index) => (
                           <div
                             key={index}
-                            className="h-14 animate-pulse rounded-[20px] bg-zinc-100"
+                            className="h-14 animate-pulse rounded-[20px] bg-zinc-900/50 border border-white/5"
                           />
                         ))}
                       </div>
@@ -1275,17 +1292,17 @@ export default function PremierLeagueFixturesHub() {
               </motion.div>
             ) : (
               <motion.div key="stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="grid gap-6 bg-[#faf7f2] px-4 py-6 sm:px-8">
-                  <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white">
-                    <div className="border-b border-zinc-200 px-6 py-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">
+                <div className="grid gap-6 bg-transparent px-4 py-6 sm:px-8">
+                  <section className="overflow-hidden rounded-[28px] border border-white/10 bg-zinc-900/50 backdrop-blur-md">
+                    <div className="border-b border-white/10 bg-zinc-950/40 px-6 py-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                         Player leaders
                       </p>
                       <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <h2 className="text-2xl font-black text-zinc-950">
+                        <h2 className="text-2xl font-black text-white">
                           Premier League stat race
                         </h2>
-                        <p className="text-sm text-zinc-500">
+                        <p className="text-sm text-zinc-400">
                           Swipe across categories on mobile to move between the live leaderboards.
                         </p>
                       </div>
@@ -1294,16 +1311,16 @@ export default function PremierLeagueFixturesHub() {
                       </div>
                     </div>
 
-                    <div className="border-b border-zinc-200 px-4 py-4 sm:px-6">
-                      <div className="flex gap-3 overflow-x-auto pb-1">
+                    <div className="border-b border-white/10 bg-zinc-900/40 px-4 py-4 sm:px-6">
+                      <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar">
                         {Object.entries(STATS_CATEGORY_LABELS).map(([categoryKey, label]) => (
                           <button
                             key={categoryKey}
                             onClick={() => setActiveStatsCategory(categoryKey)}
                             className={`shrink-0 rounded-full border px-5 py-3 text-sm font-semibold transition ${
                               activeStatsCategory === categoryKey
-                                ? "border-transparent bg-[#1976d2] text-white shadow-[0_10px_25px_rgba(25,118,210,0.22)]"
-                                : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+                                ? "border-green-500 bg-green-500 text-black shadow-lg shadow-green-500/25 font-bold"
+                                : "border-white/10 bg-zinc-800/80 text-zinc-300 hover:border-white/20 hover:bg-zinc-700 hover:text-white"
                             }`}
                           >
                             {label}
@@ -1329,7 +1346,7 @@ export default function PremierLeagueFixturesHub() {
                         {Array.from({ length: 8 }).map((_, index) => (
                           <div
                             key={index}
-                            className="h-20 animate-pulse rounded-[22px] bg-zinc-100"
+                            className="h-20 animate-pulse rounded-[22px] bg-zinc-900/50 border border-white/5"
                           />
                         ))}
                       </div>
@@ -1347,7 +1364,7 @@ export default function PremierLeagueFixturesHub() {
                     )}
                   </section>
 
-                  <section className="rounded-[28px] border border-zinc-200 bg-zinc-950 p-6 text-white">
+                  <section className="rounded-[28px] border border-white/10 bg-zinc-900/60 p-6 text-white">
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
                       Provider mix
                     </p>

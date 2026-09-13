@@ -36,9 +36,28 @@ export default function LeagueOnboardingModal({ open, onComplete }) {
 
   const canSave = selected.length === FAVORITE_LEAGUE_COUNT;
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        const fallback = selected.length === FAVORITE_LEAGUE_COUNT ? selected : ["premier-league", "psl", "uefa-champions-league"];
+        const saved = writeFavoriteLeagues(fallback);
+        onComplete?.(saved);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, selected, onComplete]);
+
   const handleSave = () => {
     if (!canSave) return;
     const saved = writeFavoriteLeagues(selected);
+    onComplete?.(saved);
+  };
+
+  const handleUseDefaults = () => {
+    const defaults = ["premier-league", "psl", "uefa-champions-league"];
+    const saved = writeFavoriteLeagues(defaults);
     onComplete?.(saved);
   };
 
@@ -126,12 +145,19 @@ export default function LeagueOnboardingModal({ open, onComplete }) {
               ))}
             </div>
 
-            <div className="border-t border-white/10 px-6 py-5 sm:px-8">
+            <div className="border-t border-white/10 px-6 py-5 sm:px-8 flex flex-col sm:flex-row items-center gap-3">
+              <button
+                type="button"
+                onClick={handleUseDefaults}
+                className="w-full sm:w-auto px-5 py-3.5 rounded-xl border border-white/10 bg-white/[0.04] text-xs font-black uppercase tracking-widest text-zinc-300 hover:text-white hover:bg-white/[0.08] transition"
+              >
+                Use defaults & browse
+              </button>
               <button
                 type="button"
                 disabled={!canSave}
                 onClick={handleSave}
-                className="w-full rounded-2xl bg-green-500 px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-black transition enabled:hover:bg-green-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+                className="w-full sm:flex-1 rounded-2xl bg-green-500 px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-black transition enabled:hover:bg-green-400 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
               >
                 Save my leagues
               </button>

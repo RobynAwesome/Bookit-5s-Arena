@@ -128,37 +128,39 @@ function ArenaOverviewCard({ icon, label, value, description, accent }) {
 
 function TabBar({ tabs, activeTab, onChange }) {
   return (
-    <div className="flex gap-1 bg-gray-900/80 rounded-xl p-1 border border-gray-800 w-fit">
-      {tabs.map((tab) => (
-        <motion.button
-          key={tab.key}
-          onClick={() => onChange(tab.key)}
-          className={`relative px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer transition-colors ${
-            activeTab === tab.key
-              ? "text-white"
-              : "text-gray-500 hover:text-gray-300"
-          }`}
-          whileTap={{ scale: 0.97 }}
-        >
-          {activeTab === tab.key && (
-            <motion.div
-              layoutId="activeTab"
-              className="absolute inset-0 bg-gray-800 rounded-lg border border-gray-700"
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            />
-          )}
-          <span className="relative flex items-center gap-2">
-            {tab.icon}
-            {tab.label}
-            {tab.badge > 0 && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-600/30 text-red-400 text-[8px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                {tab.badge}
-              </span>
+    <div className="w-full sm:w-fit overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
+      <div className="flex gap-1 bg-gray-900/80 rounded-xl p-1 border border-gray-800 w-fit min-w-max">
+        {tabs.map((tab) => (
+          <motion.button
+            key={tab.key}
+            onClick={() => onChange(tab.key)}
+            className={`relative px-4 py-2.5 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer transition-colors flex-shrink-0 ${
+              activeTab === tab.key
+                ? "text-white"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+            whileTap={{ scale: 0.97 }}
+          >
+            {activeTab === tab.key && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-gray-800 rounded-lg border border-gray-700"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
             )}
-          </span>
-        </motion.button>
-      ))}
+            <span className="relative flex items-center gap-2">
+              {tab.icon}
+              {tab.label}
+              {tab.badge > 0 && (
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-600/30 text-red-400 text-[8px] font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  {tab.badge}
+                </span>
+              )}
+            </span>
+          </motion.button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -312,16 +314,16 @@ function FixtureCard({ fixture, index, expanded, onToggle, flash }) {
       {/* Header: competition + round + status */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-gray-600">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
             {fixture.competitionType === "tournament" ? "🏆 Tournament" : "🏟️ League"}
           </span>
           {fixture.groupLetter && (
-            <span className="text-[9px] font-bold text-gray-600">
+            <span className="text-[10px] font-bold text-zinc-400">
               · Group {fixture.groupLetter}
             </span>
           )}
           {fixture.round && ROUND_LABEL[fixture.round] && (
-            <span className="text-[9px] text-gray-600">
+            <span className="text-[10px] text-zinc-400">
               · {ROUND_LABEL[fixture.round]}
             </span>
           )}
@@ -401,7 +403,7 @@ function FixtureCard({ fixture, index, expanded, onToggle, flash }) {
       </div>
 
       {/* Venue */}
-      <div className="text-[9px] text-gray-600 text-center mt-2">
+      <div className="text-[10px] text-zinc-400 text-center mt-2">
         {fixture.venue}
         {fixture.matchday && ` · MD ${fixture.matchday}`}
       </div>
@@ -411,7 +413,7 @@ function FixtureCard({ fixture, index, expanded, onToggle, flash }) {
         <>
           <button
             onClick={onToggle}
-            className="w-full flex items-center justify-center gap-1 mt-2 text-[9px] text-gray-600 hover:text-gray-400 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-1 mt-2 text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
           >
             {expanded ? <FaChevronUp size={8} /> : <FaChevronDown size={8} />}
             {expanded ? "Hide" : `${fixture.events.length} events`}
@@ -458,7 +460,7 @@ function GlobalMatchRow({ match, index }) {
         ) : isFinished ? (
           <span className="text-gray-500 text-[9px] font-black">FT</span>
         ) : (
-          <span className="text-gray-600 text-[9px] font-bold">
+          <span className="text-zinc-400 text-[10px] font-bold">
             {match.date
               ? new Date(match.date).toLocaleTimeString("en-ZA", {
                   hour: "2-digit",
@@ -540,60 +542,62 @@ function StandingsTable({ groupLetter, teams, flash }) {
         </span>
       </div>
 
-      <table className="w-full text-[10px]">
-        <thead>
-          <tr className="text-gray-600 uppercase tracking-widest border-b border-gray-800/50">
-            <th className="text-left py-2 px-4 font-bold">#</th>
-            <th className="text-left py-2 font-bold">Team</th>
-            <th className="py-2 px-1 font-bold">MP</th>
-            <th className="py-2 px-1 font-bold">W</th>
-            <th className="py-2 px-1 font-bold">D</th>
-            <th className="py-2 px-1 font-bold">L</th>
-            <th className="py-2 px-1 font-bold">GD</th>
-            <th className="py-2 px-2 font-bold text-green-500">PTS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {teams.map((team, i) => (
-            <tr
-              key={team._id}
-              className={`border-b border-gray-800/30 ${
-                i < 2
-                  ? "bg-green-950/20"
-                  : ""
-              }`}
-            >
-              <td className="py-2 px-4 text-gray-500 font-bold">{i + 1}</td>
-              <td className="py-2">
-                <div className="flex items-center gap-2">
-                  {(team.worldCupTeamLogo || team.logo) && (
-                    <img
-                      src={team.worldCupTeamLogo || team.logo}
-                      alt=""
-                      className="w-4 h-4 rounded-full"
-                    />
-                  )}
-                  <span className={`font-bold ${i < 2 ? "text-green-400" : "text-gray-300"}`}>
-                    {team.worldCupTeam
-                      ? team.worldCupTeam.split(" (")[0]
-                      : team.teamName}
-                  </span>
-                </div>
-              </td>
-              <td className="py-2 px-1 text-center text-gray-500">{team.mp || 0}</td>
-              <td className="py-2 px-1 text-center text-gray-500">{team.w || 0}</td>
-              <td className="py-2 px-1 text-center text-gray-500">{team.d || 0}</td>
-              <td className="py-2 px-1 text-center text-gray-500">{team.l || 0}</td>
-              <td className="py-2 px-1 text-center text-gray-400 font-bold">
-                {(team.gd || 0) > 0 ? `+${team.gd}` : team.gd || 0}
-              </td>
-              <td className="py-2 px-2 text-center text-green-400 font-black">
-                {team.pts || 0}
-              </td>
+      <div className="overflow-x-auto w-full">
+        <table className="w-full text-[10px] sm:text-xs min-w-[340px]">
+          <thead>
+            <tr className="text-zinc-400 uppercase tracking-widest border-b border-gray-800/50">
+              <th className="text-left py-2.5 px-4 font-bold">#</th>
+              <th className="text-left py-2.5 font-bold">Team</th>
+              <th className="py-2.5 px-1 font-bold"><abbr title="Matches Played" className="no-underline">MP</abbr></th>
+              <th className="py-2.5 px-1 font-bold"><abbr title="Won" className="no-underline">W</abbr></th>
+              <th className="py-2.5 px-1 font-bold"><abbr title="Drawn" className="no-underline">D</abbr></th>
+              <th className="py-2.5 px-1 font-bold"><abbr title="Lost" className="no-underline">L</abbr></th>
+              <th className="py-2.5 px-1 font-bold"><abbr title="Goal Difference" className="no-underline">GD</abbr></th>
+              <th className="py-2.5 px-2 font-bold text-green-400"><abbr title="Points" className="no-underline">PTS</abbr></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {teams.map((team, i) => (
+              <tr
+                key={team._id}
+                className={`border-b border-gray-800/30 ${
+                  i < 2
+                    ? "bg-green-950/20"
+                    : ""
+                }`}
+              >
+                <td className="py-2 px-4 text-zinc-400 font-bold">{i + 1}</td>
+                <td className="py-2">
+                  <div className="flex items-center gap-2">
+                    {(team.worldCupTeamLogo || team.logo) && (
+                      <img
+                        src={team.worldCupTeamLogo || team.logo}
+                        alt=""
+                        className="w-4 h-4 rounded-full flex-shrink-0"
+                      />
+                    )}
+                    <span className={`font-bold truncate max-w-[120px] sm:max-w-none ${i < 2 ? "text-green-400" : "text-gray-200"}`}>
+                      {team.worldCupTeam
+                        ? team.worldCupTeam.split(" (")[0]
+                        : team.teamName}
+                    </span>
+                  </div>
+                </td>
+                <td className="py-2 px-1 text-center text-zinc-400">{team.mp || 0}</td>
+                <td className="py-2 px-1 text-center text-zinc-400">{team.w || 0}</td>
+                <td className="py-2 px-1 text-center text-zinc-400">{team.d || 0}</td>
+                <td className="py-2 px-1 text-center text-zinc-400">{team.l || 0}</td>
+                <td className="py-2 px-1 text-center text-zinc-300 font-bold">
+                  {(team.gd || 0) > 0 ? `+${team.gd}` : team.gd || 0}
+                </td>
+                <td className="py-2 px-2 text-center text-green-400 font-black">
+                  {team.pts || 0}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </motion.div>
   );
 }

@@ -2,8 +2,33 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import FootballFixturesHub from "@/components/fixtures/FootballFixturesHub";
-import PremierLeagueFixturesHub from "@/components/fixtures/PremierLeagueFixturesHub";
+import dynamic from "next/dynamic";
+
+const FootballFixturesHub = dynamic(
+  () => import("@/components/fixtures/FootballFixturesHub"),
+  {
+    loading: () => (
+      <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 rounded-[32px] border border-green-500/10 bg-white/[0.02]">
+        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 animate-pulse">Loading competition hub...</span>
+      </div>
+    ),
+    ssr: false,
+  }
+);
+
+const PremierLeagueFixturesHub = dynamic(
+  () => import("@/components/fixtures/PremierLeagueFixturesHub"),
+  {
+    loading: () => (
+      <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 rounded-[32px] border border-green-500/10 bg-white/[0.02]">
+        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 animate-pulse">Loading Premier League hub...</span>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 import LeagueOnboardingModal from "@/components/fixtures/LeagueOnboardingModal";
 import FavoriteLeaguesRail from "@/components/fixtures/FavoriteLeaguesRail";
 import FixturesRefactorShield from "@/components/fixtures/FixturesRefactorShield";

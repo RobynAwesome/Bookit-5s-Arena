@@ -5,7 +5,7 @@ import { getProviders, signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ReCAPTCHA from "react-google-recaptcha";
-import { FaGoogle, FaLock, FaSignInAlt, FaTrophy, FaUserPlus } from "react-icons/fa";
+import { FaFutbol, FaGoogle, FaLock, FaSignInAlt, FaTrophy, FaUserPlus } from "react-icons/fa";
 
 function AuthPageInner() {
   const { status } = useSession();
@@ -160,28 +160,25 @@ function AuthPageInner() {
             Account access
           </p>
           <h1 className="mt-4 text-4xl font-black uppercase leading-none tracking-tight sm:text-6xl">
-            Sign in to the arena, not an expired campaign.
+            Welcome to Five&apos;s Arena.
           </h1>
           <p className="mt-5 text-sm leading-7 text-gray-400 sm:text-base">
-            Account access is for current 5s Arena features such as booking history and role-based
-            tools. Authentication does not imply that a court, league, event, price, or competition
-            is currently available; those states must be confirmed by their own source.
+            Sign in to manage your court reservations, view match fixtures, track team stats, and access manager tools at Hellenic Football Club in Milnerton.
           </p>
 
-          <div className="mt-7 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-5">
-            <div className="flex items-center gap-3 text-yellow-300">
-              <FaTrophy />
-              <p className="text-xs font-black uppercase tracking-widest">World Cup 5s 2026</p>
+          <div className="mt-7 rounded-2xl border border-green-500/20 bg-green-500/5 p-5">
+            <div className="flex items-center gap-3 text-green-400">
+              <FaFutbol />
+              <p className="text-xs font-black uppercase tracking-widest">Hellenic FC · Milnerton</p>
             </div>
             <p className="mt-3 text-sm leading-6 text-gray-400">
-              The 29–31 May 2026 tournament is historical. Registration closed 22 May 2026; this
-              login page no longer advertises entry fees, prize claims, or team signup as current.
+              Floodlit synthetic turf courts, competitive local leagues, and private pitch hire. For instant bookings or match day inquiries, explore our court availability.
             </p>
             <Link
-              href="/tournament"
-              className="mt-4 inline-flex text-xs font-black uppercase tracking-widest text-yellow-300 hover:text-yellow-200"
+              href="/#courts"
+              className="mt-4 inline-flex text-xs font-black uppercase tracking-widest text-green-400 hover:text-green-300"
             >
-              Open tournament archive →
+              View Court Availability →
             </Link>
           </div>
         </section>
@@ -310,9 +307,8 @@ function AuthPageInner() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-[10px] leading-5 text-gray-600">
-            Account creation is not a reservation. Current booking and competition states are
-            validated separately.
+          <p className="mt-6 text-center text-[10px] leading-5 text-gray-500">
+            By continuing, you agree to the Five&apos;s Arena terms of play and venue safety guidelines.
           </p>
         </section>
       </div>

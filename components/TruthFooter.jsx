@@ -171,8 +171,8 @@ export default function TruthFooter() {
               <div className="flex justify-between gap-4"><span>Sunday</span><span>10:00 – 22:00</span></div>
               <div className="flex justify-between gap-4 border-t border-gray-800 pt-2"><span>Public holidays</span><span className="text-amber-300">Confirm directly</span></div>
             </div>
-            <p className="mt-3 text-[10px] leading-5 text-gray-600">
-              Reference hours are not a real-time open/closed signal.
+            <p className="mt-3 text-[10px] leading-5 text-gray-500">
+              Standard operating hours for Hellenic Football Club, Milnerton.
             </p>
           </div>
         </div>
@@ -181,9 +181,8 @@ export default function TruthFooter() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-yellow-500">Kopano-Phu ecosystem</p>
-              <p className="mt-2 max-w-3xl text-xs leading-6 text-gray-600">
-                LINKED records a configured relationship from this site. It does not certify the
-                destination&apos;s current runtime health.
+              <p className="mt-2 max-w-3xl text-xs leading-6 text-gray-400">
+                Connected platforms, community initiatives, and technology projects across the Kopano-Phu studio network.
               </p>
             </div>
           </div>

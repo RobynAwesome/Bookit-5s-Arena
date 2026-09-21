@@ -4,6 +4,7 @@ import { getAuthSession } from '@/lib/getSession';
 import { requireRole } from '@/lib/roles';
 import connectDB from '@/lib/mongodb';
 import Court from '@/models/Court';
+import { normalizeCourtPayload } from '@/lib/courts/normalizeCourtPayload';
 
 function publicCourtResponse(courts, status = 200, state = 'verified-source') {
   const response = NextResponse.json(courts, { status });
@@ -66,22 +67,21 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, pricePerHour, images, amenities, openTime, closeTime } = body;
+    let courtPayload;
 
-    if (!name || !pricePerHour) {
-      return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
+    try {
+      courtPayload = normalizeCourtPayload(body);
+    } catch (validationError) {
+      return NextResponse.json(
+        { error: validationError.message || 'Invalid court payload' },
+        { status: 400 }
+      );
     }
 
     await connectDB();
 
     const court = await Court.create({
-      name,
-      description: description || '',
-      pricePerHour: Number(pricePerHour),
-      images: images || [],
-      amenities: amenities || [],
-      openTime: openTime || '10:00',
-      closeTime: closeTime || '22:00',
+      ...courtPayload,
       owner: session.user.id,
     });
 
